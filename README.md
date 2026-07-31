@@ -20,4 +20,4 @@ The prior-art sweep ([docs/ticket-dag-viewer-landscape-2026-07-29.md](docs/ticke
 
 ## Status
 
-Spec and tickets live on this repo's [issue tracker](https://github.com/cmengu/Meta-Harness/issues). This repo's own issue DAG is the first dataset the Overviewer will render.
+Spec and tickets live on this repo's [issue tracker](https://github.com/cmengu/Github_Kanban/issues). This repo's own issue DAG is the first dataset the Overviewer will render.
