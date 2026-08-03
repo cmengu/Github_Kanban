@@ -12,7 +12,7 @@
  */
 
 import type { Layout, LayoutNode } from '../layout/layout'
-import type { DomainGraph, Ticket, TicketKey } from '../domain/types'
+import type { DomainGraph, PullNode, Ticket, TicketKey } from '../domain/types'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -48,6 +48,7 @@ function defs(): SVGDefsElement {
 
 const classesFor = (n: LayoutNode): string => {
   const out = ['node']
+  if (n.kind === 'pull') out.push('is-pull')
   if (n.done) out.push('is-done')
   if (n.blocked) out.push('is-blocked')
   if (n.frontier) out.push('is-frontier')
@@ -61,6 +62,7 @@ const classesFor = (n: LayoutNode): string => {
  */
 export function mount(svg: SVGSVGElement, g: DomainGraph, l: Layout): void {
   const titles = new Map<TicketKey, Ticket>(g.tickets.map((t) => [t.key, t]))
+  const orphans = new Map<string, PullNode>(g.pulls.map((p) => [p.key, p]))
 
   svg.replaceChildren()
   svg.setAttribute('viewBox', `0 0 ${l.width} ${l.height}`)
@@ -124,6 +126,29 @@ export function mount(svg: SVGSVGElement, g: DomainGraph, l: Layout): void {
   // ---- stars ----
   const nodeLayer = el('g', { class: 'nodes' })
   for (const n of l.nodes) {
+    // An orphan PR is a different kind of thing, so it gets a different shape
+    // (step 3, decision 4): a hollow ring, not an orb — it has no wave and no
+    // bucket, and a filled orb would claim a position nothing computed.
+    if (n.kind === 'pull') {
+      const p = orphans.get(n.key)
+      const group = el('g', { class: classesFor(n), 'data-key': n.key, transform: `translate(${n.x} ${n.y})` })
+      const link = el('a', { href: p?.url ?? '#', target: '_blank', rel: 'noopener' })
+
+      link.append(el('circle', { class: 'pull-ring', cx: 0, cy: 0, r: n.r }))
+      const bang = n.key.lastIndexOf('!')
+      const label = el('text', { class: 'label', x: 0, y: n.r + 14, 'text-anchor': 'middle' })
+      label.textContent = bang === -1 ? n.key : n.key.slice(bang)
+      link.append(label)
+      link.append(el('circle', { class: 'hit', cx: 0, cy: 0, r: 16 }))
+
+      const tip = el('title')
+      tip.textContent = p ? `${n.key} — ${p.title}\n${p.state}, closes no loaded issue` : n.key
+      link.append(tip)
+      group.append(link)
+      nodeLayer.append(group)
+      continue
+    }
+
     const t = titles.get(n.key)
     const group = el('g', { class: classesFor(n), 'data-key': n.key, transform: `translate(${n.x} ${n.y})` })
 
