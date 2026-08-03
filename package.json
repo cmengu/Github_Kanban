@@ -1,0 +1,21 @@
+{
+  "name": "overviewer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Stateless GitHub-as-source-of-truth viewer fusing kanban buckets with the ticket dependency DAG",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^3.2.7"
+  }
+}

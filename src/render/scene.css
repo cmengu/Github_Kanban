@@ -1,0 +1,91 @@
+/* The accepted prototype's look, retyped: deep space in both themes, muted
+   palette, gradient edges with no arrowheads, orb / ring / pulse / dwarf. */
+
+:root {
+  --space: #0b0e1a;
+  --ink: #dcdfea;
+  --dim: #8e93a8;
+  --faint: #5c6178;
+  --line: rgba(170, 178, 210, 0.14);
+  --teal: #4f9b95;
+  --teal-ink: #8fc8c3;
+  --purple-ink: #ac9fe8;
+  --rose-ink: #d69cb1;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--space);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+header {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  padding: 20px 24px 12px;
+}
+h1 { font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+header .note { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+
+#view-toggle {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+  color: var(--teal-ink); background: rgba(11, 14, 26, 0.6);
+  border: 1px solid rgba(79, 155, 149, 0.5); border-radius: 999px;
+  padding: 5px 14px; cursor: pointer;
+}
+#view-toggle:hover { border-color: var(--teal-ink); }
+#view-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+#scene { display: block; width: 100%; height: auto; padding: 0 12px 40px; }
+
+/* ---- lanes ---- */
+.lane-line { stroke: var(--line); stroke-width: 1; stroke-dasharray: 4 6; }
+.lane-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; fill: var(--faint);
+}
+
+/* ---- edges: bright toward the blocker, beaded while still waiting ---- */
+.edge { fill: none; stroke: rgba(170, 178, 210, 0.3); stroke-width: 1; }
+.edge.is-waiting { stroke: rgba(172, 159, 232, 0.42); stroke-dasharray: 3 5; }
+.edge.is-settled { stroke: rgba(143, 200, 195, 0.28); }
+.edge.is-cross { stroke-width: 1.5; stroke: rgba(214, 156, 177, 0.5); }
+.edge-dot { fill: rgba(170, 178, 210, 0.6); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .edge.is-waiting { animation: drift 2.6s linear infinite; }
+  @keyframes drift { to { stroke-dashoffset: -16; } }
+}
+
+/* ---- stars ---- */
+.glow { fill: rgba(79, 155, 149, 0.13); }
+.orb { fill: url(#orb); }
+.ring { fill: none; stroke: rgba(143, 200, 195, 0.75); stroke-width: 1; }
+.hit { fill: transparent; cursor: pointer; }
+.label { font-family: var(--mono); font-size: 10px; fill: var(--dim); pointer-events: none; }
+
+.node.is-done .orb { fill: url(#dwarf); }
+.node.is-done .glow { fill: rgba(148, 156, 190, 0.07); }
+.node.is-blocked .orb { opacity: 0.42; }
+.node.is-blocked .label { fill: var(--faint); }
+.node.is-gated .orb { stroke: var(--rose-ink); stroke-width: 1.5; }
+
+.halo { fill: none; stroke: rgba(143, 200, 195, 0.55); stroke-width: 1; opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .node.is-frontier .halo { animation: breathe 3.2s ease-in-out infinite; }
+  @keyframes breathe {
+    0%, 100% { opacity: 0; transform: scale(0.94); }
+    50% { opacity: 0.6; transform: scale(1.06); }
+  }
+}
+
+/* ---- hover focus: class toggles only, never a rebuild ---- */
+#scene.has-focus .node { opacity: 0.22; }
+#scene.has-focus .node.is-lit { opacity: 1; }
+#scene.has-focus .edge { opacity: 0.12; }
+#scene.has-focus .edge.is-lit { opacity: 1; stroke-width: 1.6; }
+.node, .edge { transition: opacity 140ms ease-out; }
