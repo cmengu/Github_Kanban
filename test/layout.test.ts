@@ -35,7 +35,7 @@ describe('determinism — the foundation #15 stands on', () => {
 
   it('does not depend on the order tickets and edges arrive in', () => {
     const g = fixture()
-    const shuffled: DomainGraph = { tickets: shuffle(g.tickets), edges: shuffle(g.edges) }
+    const shuffled: DomainGraph = { tickets: shuffle(g.tickets), edges: shuffle(g.edges), pulls: [] }
     expect(layout(shuffled, 'map').pos).toEqual(layout(g, 'map').pos)
     expect(layout(shuffled, 'board').pos).toEqual(layout(g, 'board').pos)
   })

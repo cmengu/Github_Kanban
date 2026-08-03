@@ -18,8 +18,12 @@ export function pr(over: Partial<PullRef> = {}): PullRef {
   return { number: 1, state: 'open', awaitingReview: false, url: 'https://example.invalid/pr/1', ...over }
 }
 
-export function graph(tickets: Ticket[], edges: DomainGraph['edges'] = []): DomainGraph {
-  return { tickets, edges }
+export function graph(
+  tickets: Ticket[],
+  edges: DomainGraph['edges'] = [],
+  pulls: DomainGraph['pulls'] = [],
+): DomainGraph {
+  return { tickets, edges, pulls }
 }
 
 /** Deterministic shuffle (seeded), so "order must not matter" tests never flake. */

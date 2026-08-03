@@ -1,0 +1,416 @@
+{
+  "repos": [
+    {
+      "nameWithOwner": "cmengu/Github_Kanban",
+      "issues": {
+        "nodes": [
+          {
+            "number": 1,
+            "title": "Spec: Overviewer — fused kanban×DAG viewer for multi-repo GitHub issues/PRs",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/1",
+            "assignees": {
+              "nodes": []
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "ready-for-agent"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 2,
+            "title": "Prototype: does the rank=bucket fused layout actually work?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/2",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:prototype"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 3,
+            "title": "Decision: what exactly are the workflow buckets?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/3",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 4,
+            "title": "Decision: where do buckets live — Projects v2 Status or derived from state?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/4",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": [
+                {
+                  "number": 3,
+                  "repository": {
+                    "nameWithOwner": "cmengu/Github_Kanban"
+                  }
+                },
+                {
+                  "number": 10,
+                  "repository": {
+                    "nameWithOwner": "cmengu/Github_Kanban"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "number": 5,
+            "title": "Decision: are GitHub-native blocked-by relations the only edge store?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/5",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 6,
+            "title": "Decision: how are PRs represented — folded into issue nodes or separate nodes?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/6",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 7,
+            "title": "Decision: multi-project screen — stacked lanes, tabs, or one merged graph?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/7",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 8,
+            "title": "Decision: attention-lens semantics — what is loud, and why?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/8",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 9,
+            "title": "Decision: the batch-creation contract with to-tickets",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/9",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 10,
+            "title": "Research: GitHub API facts the spec depends on",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/10",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:research"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 11,
+            "title": "Decision: v1 write scope — pure lens, or drag-to-move and edge editing?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/11",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": [
+                {
+                  "number": 4,
+                  "repository": {
+                    "nameWithOwner": "cmengu/Github_Kanban"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "number": 12,
+            "title": "Decision: auth, hosting, and liveness — PAT + static + polling?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/12",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": [
+                {
+                  "number": 10,
+                  "repository": {
+                    "nameWithOwner": "cmengu/Github_Kanban"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "number": 13,
+            "title": "Decision: the stack — React Flow + dagre/ELK + Vite + TypeScript?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/13",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": [
+                {
+                  "number": 2,
+                  "repository": {
+                    "nameWithOwner": "cmengu/Github_Kanban"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "number": 14,
+            "title": "Wayfinder map: Overviewer",
+            "state": "OPEN",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/14",
+            "assignees": {
+              "nodes": []
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:map"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 15,
+            "title": "Decision: live-refresh layout stability — re-layout each poll, or pin positions?",
+            "state": "CLOSED",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/15",
+            "assignees": {
+              "nodes": [
+                {
+                  "login": "cmengu"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "wayfinder:grilling"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 16,
+            "title": "Spec: Overviewer v2 — two-projection star-map viewer over GitHub-native ticket DAGs (supersedes #1)",
+            "state": "OPEN",
+            "url": "https://github.com/cmengu/Github_Kanban/issues/16",
+            "assignees": {
+              "nodes": []
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "ready-for-agent"
+                }
+              ]
+            },
+            "blockedBy": {
+              "nodes": []
+            }
+          }
+        ]
+      },
+      "pullRequests": {
+        "nodes": [
+          {
+            "number": 17,
+            "title": "Step 1: carve the core — types, derive, layout, render, fixture",
+            "state": "MERGED",
+            "url": "https://github.com/cmengu/Github_Kanban/pull/17",
+            "isDraft": false,
+            "reviewDecision": null,
+            "closingIssuesReferences": {
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

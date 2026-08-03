@@ -42,10 +42,30 @@ export interface Edge {
   by: TicketKey
 }
 
+/**
+ * A pull request with no issue behind it, standing as its own node in its
+ * repo's lane (story 15).
+ *
+ * Added in step 2, out loud. Step 1's contract had nowhere to put one, because
+ * `PullRef` only exists nested inside a `Ticket` — and ingest is the only code
+ * that ever sees the raw pull-request list, so a PR dropped there is gone for
+ * good. A pipeline can only lose data once.
+ */
+export interface PullNode {
+  /** `"owner/repo!42"` — `!` where tickets use `#`, so the two can never collide. */
+  key: string
+  repo: string
+  title: string
+  state: 'open' | 'merged' | 'closed'
+  awaitingReview: boolean
+  url: string
+}
+
 /** The whole of stored truth. Anything not in here is computed on demand. */
 export interface DomainGraph {
   tickets: Ticket[]
   edges: Edge[]
+  pulls: PullNode[]
 }
 
 /** The repo half of a key: `"owner/repo#123"` → `"owner/repo"`. Picks the lane (#7). */
