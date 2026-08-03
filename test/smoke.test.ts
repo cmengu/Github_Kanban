@@ -52,8 +52,22 @@ describe('mount / setFocus — data changes rebuild, pointer moves do not', () =
     mount(svg, demo, l)
 
     expect(svg.querySelectorAll('g.node')).toHaveLength(demo.tickets.length)
-    expect(svg.querySelectorAll('path.edge')).toHaveLength(l.paths.length)
+    expect(svg.querySelectorAll('g.edge')).toHaveLength(l.paths.length)
+    expect(svg.querySelectorAll('text.col-label')).toHaveLength(l.columns.length)
     expect(svg.getAttribute('viewBox')).toBe(`0 0 ${l.width} ${l.height}`)
+  })
+
+  it('links every star through to its issue on GitHub', () => {
+    const svg = scene()
+    mount(svg, demo, layout(demo, 'map'))
+
+    const byKey = new Map(demo.tickets.map((t) => [t.key, t]))
+    const links = svg.querySelectorAll('g.node a')
+    expect(links).toHaveLength(demo.tickets.length)
+    for (const a of links) {
+      const key = a.closest('g.node')!.getAttribute('data-key')!
+      expect(a.getAttribute('href')).toBe(byKey.get(key)!.url)
+    }
   })
 
   it('lights a chain by toggling classes, without rebuilding anything', () => {

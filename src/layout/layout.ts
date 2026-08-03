@@ -10,7 +10,7 @@
  * makes the picture identical on every refresh, and delta stability free (#15).
  */
 
-import { bucketOf, gatedCount, indexOf, waves } from '../domain/derive'
+import { bucketOf, frontier, gatedCount, indexOf, waves } from '../domain/derive'
 import type { Bucket, DomainGraph, TicketKey } from '../domain/types'
 import { repoOf } from '../domain/types'
 
@@ -47,9 +47,17 @@ export interface LayoutNode {
 
 export interface Lane {
   repo: string
-  index: number
   y: number
   height: number
+  /** Total open work this repo's tickets gate — what orders the lanes (#7). */
+  weight: number
+}
+
+/** One column heading: which band, where, and what to call it. */
+export interface Column {
+  band: number
+  x: number
+  label: string
 }
 
 export interface EdgePath {
@@ -68,6 +76,7 @@ export interface Layout {
   pos: Record<TicketKey, Point>
   nodes: LayoutNode[]
   lanes: Lane[]
+  columns: Column[]
   paths: EdgePath[]
   width: number
   height: number
@@ -86,6 +95,11 @@ const DOT_T = 0.06
 
 /** The four board columns, in workflow order (#3). */
 const BOARD_BANDS: Bucket[] = ['tickets', 'in-progress', 'in-review', 'done']
+const BOARD_LABELS = ['Tickets', 'In progress', 'In review', 'Done']
+
+/** What a star map column means: 0 is finished, 1 is startable, then hand-offs. */
+const waveLabel = (band: number): string =>
+  band === 0 ? 'Done' : band === 1 ? 'Ready now' : `${band - 1} away`
 
 /** The single expression the two views disagree about. */
 const bandOf = (view: View, bucket: Bucket, wave: number): number =>
@@ -108,15 +122,19 @@ const round = (n: number): number => Math.round(n * 100) / 100
 export function layout(g: DomainGraph, view: View): Layout {
   const ix = indexOf(g)
   const waveByKey = waves(g, ix)
-  const frontierSet = new Set(
-    g.tickets
-      .filter((t) => bucketOf(t) === 'tickets')
-      .filter((t) => (ix.blockers.get(t.key) ?? []).every((b) => ix.byKey.get(b)?.state === 'closed'))
-      .map((t) => t.key),
-  )
+  const frontierSet = new Set(frontier(g, ix))
+  const gatedByKey = new Map(g.tickets.map((t) => [t.key, gatedCount(g, t.key, ix)]))
 
-  // ---- lanes, ordered by repo name so the order never drifts under a poll ----
+  // ---- lanes, heaviest first, so the project needing attention sits on top
+  // (#7). Ties break on name, so the order is still a pure function of the data.
+  const weightOf = (repo: string): number =>
+    g.tickets
+      .filter((t) => repoOf(t.key) === repo)
+      .reduce((sum, t) => sum + (gatedByKey.get(t.key) ?? 0), 0)
+
   const repos = [...new Set(g.tickets.map((t) => repoOf(t.key)))].sort()
+  const laneWeight = new Map(repos.map((repo) => [repo, weightOf(repo)]))
+  repos.sort((a, b) => (laneWeight.get(b) ?? 0) - (laneWeight.get(a) ?? 0) || (a < b ? -1 : a > b ? 1 : 0))
 
   // ---- which column and which lane each ticket lands in ----
   type Slot = { key: TicketKey; band: number; repo: string }
@@ -136,7 +154,7 @@ export function layout(g: DomainGraph, view: View): Layout {
   const rowOf = new Map<TicketKey, number>()
 
   let cursor = PAD_Y
-  repos.forEach((repo, index) => {
+  for (const repo of repos) {
     const mine = slots.filter((s) => s.repo === repo)
     let rows = 1
     for (let band = 0; band <= maxBand; band++) {
@@ -151,30 +169,32 @@ export function layout(g: DomainGraph, view: View): Layout {
       })
     }
     const height = rows * ROW_H
-    lanes.push({ repo, index, y: cursor, height })
+    lanes.push({ repo, y: cursor, height, weight: laneWeight.get(repo) ?? 0 })
     cursor += height + LANE_GAP
-  })
+  }
 
   // ---- nodes, in key order so the SVG is rebuilt the same way every time ----
   const nodes: LayoutNode[] = [...g.tickets]
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
     .map((t) => {
       const at = pos[t.key] as Point
-      const gated = gatedCount(g, t.key, ix)
+      const gated = gatedByKey.get(t.key) ?? 0
+      const bucket = bucketOf(t)
       return {
         key: t.key,
         x: at.x,
         y: at.y,
         r: round(radiusOf(gated)),
-        band: bandOf(view, bucketOf(t), waveByKey.get(t.key) ?? 0),
+        band: bandOf(view, bucket, waveByKey.get(t.key) ?? 0),
         lane: repoOf(t.key),
-        bucket: bucketOf(t),
+        bucket,
         wave: waveByKey.get(t.key) ?? 0,
         gated,
         frontier: frontierSet.has(t.key),
         blocked: (ix.blockers.get(t.key) ?? []).some((b) => ix.byKey.get(b)?.state === 'open'),
         done: t.state === 'closed',
-        rings: t.prs.filter((p) => p.state === 'open').length,
+        // Every linked PR is a ring in orbit, open or not — they stack (#6).
+        rings: t.prs.length,
         humanGated: t.labels.includes('human-gated'),
       }
     })
@@ -207,11 +227,22 @@ export function layout(g: DomainGraph, view: View): Layout {
     }
   }
 
+  // ---- column headings, so a column says what it means (#3, story 4) ----
+  const columns: Column[] = []
+  for (let band = 0; band <= maxBand; band++) {
+    columns.push({
+      band,
+      x: PAD_X + band * COL_W,
+      label: view === 'board' ? (BOARD_LABELS[band] ?? '') : waveLabel(band),
+    })
+  }
+
   const lastLane = lanes[lanes.length - 1]
   return {
     pos,
     nodes,
     lanes,
+    columns,
     paths,
     width: PAD_X * 2 + maxBand * COL_W,
     height: lastLane ? lastLane.y + lastLane.height + PAD_Y : PAD_Y * 2,

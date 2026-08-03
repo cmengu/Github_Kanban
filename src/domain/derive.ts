@@ -49,11 +49,13 @@ export function indexOf(g: DomainGraph): GraphIndex {
 
   for (const e of g.edges) {
     if (e.blocked === e.by) continue
-    const blocked = blockerSets.get(e.blocked)
-    const by = dependentSets.get(e.by)
-    if (!blocked || !by) continue // one end was never loaded — drop it here, once
-    blocked.add(e.by)
-    by.add(e.blocked)
+    const blockersOfBlocked = blockerSets.get(e.blocked)
+    const dependentsOfBlocker = dependentSets.get(e.by)
+    // One end was never loaded — drop the edge here, once, so nothing
+    // downstream has to hold an opinion about it.
+    if (!blockersOfBlocked || !dependentsOfBlocker) continue
+    blockersOfBlocked.add(e.by)
+    dependentsOfBlocker.add(e.blocked)
   }
 
   const sorted = (sets: Map<TicketKey, Set<TicketKey>>): Map<TicketKey, TicketKey[]> => {

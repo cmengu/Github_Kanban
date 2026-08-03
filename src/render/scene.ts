@@ -64,7 +64,8 @@ export function mount(svg: SVGSVGElement, g: DomainGraph, l: Layout): void {
 
   svg.replaceChildren()
   svg.setAttribute('viewBox', `0 0 ${l.width} ${l.height}`)
-  svg.append(defs())
+  const sceneDefs = defs()
+  svg.append(sceneDefs)
 
   // ---- lane borders: tickets never cross them (#7) ----
   const laneLayer = el('g', { class: 'lanes' })
@@ -77,16 +78,48 @@ export function mount(svg: SVGSVGElement, g: DomainGraph, l: Layout): void {
     laneLayer.append(label)
   }
 
-  // ---- edges: no arrowheads, a dot at the blocker end (#2) ----
+  // ---- edges: no arrowheads, a gradient fading bright toward the blocker,
+  // and a dot marking that end (#2) ----
   const edgeLayer = el('g', { class: 'edges' })
-  for (const p of l.paths) {
+  l.paths.forEach((p, i) => {
+    const from = l.pos[p.by]
+    const to = l.pos[p.blocked]
+    if (!from || !to) return
+
+    const id = `edge-grad-${i}`
+    const tint = p.blockerOpen ? '#ac9fe8' : '#8fc8c3'
+    const grad = el('linearGradient', {
+      id,
+      gradientUnits: 'userSpaceOnUse',
+      x1: from.x,
+      y1: from.y,
+      x2: to.x,
+      y2: to.y,
+    })
+    grad.append(
+      el('stop', { offset: '0%', 'stop-color': tint, 'stop-opacity': 0.8 }),
+      el('stop', { offset: '100%', 'stop-color': tint, 'stop-opacity': 0.12 }),
+    )
+    sceneDefs.append(grad)
+
     const cls = ['edge', p.blockerOpen ? 'is-waiting' : 'is-settled']
     if (p.crossLane) cls.push('is-cross')
-    edgeLayer.append(
-      el('path', { class: cls.join(' '), d: p.d, 'data-blocked': p.blocked, 'data-by': p.by }),
-      el('circle', { class: 'edge-dot', cx: p.dot.x, cy: p.dot.y, r: 2.4 }),
+    const group = el('g', { class: cls.join(' '), 'data-blocked': p.blocked, 'data-by': p.by })
+    group.append(
+      el('path', { class: 'edge-line', d: p.d, stroke: `url(#${id})` }),
+      el('circle', { class: 'edge-dot', cx: p.dot.x, cy: p.dot.y, r: 2.4, fill: tint }),
     )
+    edgeLayer.append(group)
+  })
+
+  // ---- column headings: a column should say what it means (#3) ----
+  const colLayer = el('g', { class: 'columns' })
+  for (const c of l.columns) {
+    const head = el('text', { class: 'col-label', x: c.x, y: 22, 'text-anchor': 'middle' })
+    head.textContent = c.label
+    colLayer.append(head)
   }
+  svg.append(colLayer)
 
   // ---- stars ----
   const nodeLayer = el('g', { class: 'nodes' })
@@ -94,17 +127,21 @@ export function mount(svg: SVGSVGElement, g: DomainGraph, l: Layout): void {
     const t = titles.get(n.key)
     const group = el('g', { class: classesFor(n), 'data-key': n.key, transform: `translate(${n.x} ${n.y})` })
 
+    // Through to the issue on GitHub — the Overviewer stays a lens, never a
+    // silo (story 19). Everything visual hangs off this link.
+    const link = el('a', { href: t?.url ?? '#', target: '_blank', rel: 'noopener' })
+
     // Finished work collapses to a white dwarf; everything drawn around the
     // orb follows that radius so a small star never wears a large halo.
     const r = n.done ? Math.max(4, n.r * 0.5) : n.r
 
-    if (n.frontier) group.append(el('circle', { class: 'halo', cx: 0, cy: 0, r: r + 7 }))
-    group.append(el('circle', { class: 'glow', cx: 0, cy: 0, r: r + 6 }))
-    group.append(el('circle', { class: 'orb', cx: 0, cy: 0, r }))
+    if (n.frontier) link.append(el('circle', { class: 'halo', cx: 0, cy: 0, r: r + 7 }))
+    link.append(el('circle', { class: 'glow', cx: 0, cy: 0, r: r + 6 }))
+    link.append(el('circle', { class: 'orb', cx: 0, cy: 0, r }))
 
-    // One ring in orbit per open PR (#6).
+    // One ring in orbit per linked PR, stacking outward (#6).
     for (let i = 0; i < n.rings; i++) {
-      group.append(
+      link.append(
         el('ellipse', {
           class: 'ring',
           cx: 0,
@@ -116,16 +153,19 @@ export function mount(svg: SVGSVGElement, g: DomainGraph, l: Layout): void {
       )
     }
 
+    const hash = n.key.lastIndexOf('#')
     const label = el('text', { class: 'label', x: 0, y: r + 17, 'text-anchor': 'middle' })
-    label.textContent = n.key.slice(n.key.lastIndexOf('#'))
-    group.append(label)
+    label.textContent = hash === -1 ? n.key : n.key.slice(hash)
+    link.append(label)
 
-    // A generous invisible target, so small stars are still easy to hit.
-    group.append(el('circle', { class: 'hit', cx: 0, cy: 0, r: Math.max(24, n.r + 12) }))
+    // A generous invisible target so small stars stay easy to hit, capped so
+    // that vertically adjacent rows never steal each other's clicks.
+    link.append(el('circle', { class: 'hit', cx: 0, cy: 0, r: Math.min(34, Math.max(20, r + 10)) }))
 
     const tip = el('title')
     tip.textContent = t ? `${n.key} — ${t.title}\ngates ${n.gated} open · wave ${n.wave}` : n.key
-    group.append(tip)
+    link.append(tip)
+    group.append(link)
 
     nodeLayer.append(group)
   }
@@ -146,7 +186,7 @@ export function setFocus(svg: SVGSVGElement, chain: Set<TicketKey>): void {
     node.classList.toggle('is-lit', !quiet && chain.has(key))
   }
 
-  for (const edge of svg.querySelectorAll<SVGPathElement>('path.edge')) {
+  for (const edge of svg.querySelectorAll<SVGGElement>('g.edge')) {
     const lit =
       !quiet &&
       chain.has(edge.getAttribute('data-blocked') ?? '') &&

@@ -101,9 +101,21 @@ describe('bands — the only thing the two views disagree about', () => {
 })
 
 describe('lanes — one per repo, and nothing leaves its own (#7)', () => {
-  it('gives every repo a lane, ordered by name so the order never drifts', () => {
+  it('gives every repo a lane, heaviest first, ties broken by name', () => {
     const l = layout(fixture(), 'map')
+    // Both lanes gate one open ticket, so the tie falls back to the name.
     expect(l.lanes.map((lane) => lane.repo)).toEqual(['o/alpha', 'o/zulu'])
+    expect(l.lanes.map((lane) => lane.weight)).toEqual([1, 1])
+  })
+
+  it('puts the project gating the most open work on top', () => {
+    const g = fixture()
+    g.tickets.push(ticket('o/zulu#4'), ticket('o/zulu#5'))
+    g.edges.push({ blocked: 'o/zulu#4', by: 'o/zulu#1' }, { blocked: 'o/zulu#5', by: 'o/zulu#1' })
+
+    const l = layout(g, 'map')
+    expect(l.lanes[0]!.repo).toBe('o/zulu')
+    expect(l.lanes[0]!.weight).toBeGreaterThan(l.lanes[1]!.weight)
   })
 
   it('keeps every node inside its repo lane in both views', () => {
@@ -165,6 +177,24 @@ describe('edges — drawn, ready, and pointed at the blocker', () => {
   })
 })
 
+describe('columns — a column says what it means (#3)', () => {
+  it('names the four board columns in workflow order', () => {
+    const l = layout(fixture(), 'board')
+    expect(l.columns.map((c) => c.label)).toEqual(['Tickets', 'In progress', 'In review', 'Done'])
+  })
+
+  it('names the star map columns by distance from startable', () => {
+    const l = layout(fixture(), 'map')
+    expect(l.columns.map((c) => c.label)).toEqual(['Done', 'Ready now', '1 away'])
+  })
+
+  it('puts each heading over its own column', () => {
+    const l = layout(fixture(), 'map')
+    const byBand = new Map(l.columns.map((c) => [c.band, c.x]))
+    for (const n of l.nodes) expect(byBand.get(n.band)).toBe(n.x)
+  })
+})
+
 describe('orb weight — size carries importance, not rank (#8)', () => {
   it('makes a ticket that gates more work strictly bigger', () => {
     const g = graph(
@@ -177,6 +207,21 @@ describe('orb weight — size carries importance, not rank (#8)', () => {
     const byKey = new Map(layout(g, 'map').nodes.map((n) => [n.key, n]))
     expect(byKey.get('o/r#1')!.r).toBeGreaterThan(byKey.get('o/r#2')!.r)
     expect(byKey.get('o/r#2')!.r).toBeGreaterThan(byKey.get('o/r#3')!.r)
+  })
+
+  it('gives a ring to every linked PR, whatever its state (#6)', () => {
+    const g = graph([
+      ticket('o/r#1', {
+        prs: [
+          { number: 1, state: 'merged', awaitingReview: false, url: 'u1' },
+          { number: 2, state: 'open', awaitingReview: true, url: 'u2' },
+        ],
+      }),
+      ticket('o/r#2'),
+    ])
+    const byKey = new Map(layout(g, 'map').nodes.map((n) => [n.key, n]))
+    expect(byKey.get('o/r#1')!.rings).toBe(2)
+    expect(byKey.get('o/r#2')!.rings).toBe(0)
   })
 })
 

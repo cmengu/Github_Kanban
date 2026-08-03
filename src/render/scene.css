@@ -49,16 +49,21 @@ header .note { font-family: var(--mono); font-size: 11px; color: var(--faint); }
   text-transform: uppercase; fill: var(--faint);
 }
 
-/* ---- edges: bright toward the blocker, beaded while still waiting ---- */
-.edge { fill: none; stroke: rgba(170, 178, 210, 0.3); stroke-width: 1; }
-.edge.is-waiting { stroke: rgba(172, 159, 232, 0.42); stroke-dasharray: 3 5; }
-.edge.is-settled { stroke: rgba(143, 200, 195, 0.28); }
-.edge.is-cross { stroke-width: 1.5; stroke: rgba(214, 156, 177, 0.5); }
-.edge-dot { fill: rgba(170, 178, 210, 0.6); }
+/* ---- edges: the stroke is a per-edge gradient set in scene.ts, fading bright
+   toward the blocker. Only weight, dashing and opacity live here. ---- */
+.edge-line { fill: none; stroke-width: 1; }
+.edge.is-waiting .edge-line { stroke-dasharray: 3 5; }
+.edge.is-cross .edge-line { stroke-width: 1.6; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .edge.is-waiting { animation: drift 2.6s linear infinite; }
+  .edge.is-waiting .edge-line { animation: drift 2.6s linear infinite; }
   @keyframes drift { to { stroke-dashoffset: -16; } }
+}
+
+/* ---- column headings ---- */
+.col-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; fill: var(--faint);
 }
 
 /* ---- stars ---- */
@@ -87,5 +92,7 @@ header .note { font-family: var(--mono); font-size: 11px; color: var(--faint); }
 #scene.has-focus .node { opacity: 0.22; }
 #scene.has-focus .node.is-lit { opacity: 1; }
 #scene.has-focus .edge { opacity: 0.12; }
-#scene.has-focus .edge.is-lit { opacity: 1; stroke-width: 1.6; }
+#scene.has-focus .edge.is-lit { opacity: 1; }
+#scene.has-focus .edge.is-lit .edge-line { stroke-width: 1.8; }
 .node, .edge { transition: opacity 140ms ease-out; }
+.node a { cursor: pointer; }
