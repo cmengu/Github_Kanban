@@ -1,58 +1,24 @@
 /**
- * This repo's own tracker, typed out by hand as a snapshot — so the first
- * screen the Overviewer ever draws is its own build plan.
+ * This repo's own tracker, so the first screen the Overviewer ever draws is its
+ * own build plan.
  *
- * Every row below is a real issue with its real state as of 2026-08-03. Step 3
- * replaces this file with a live GitHub fetch and nothing else changes; because
- * it is typed, the compiler already checks it against the shape step 2's ingest
- * has to produce.
+ * Step 1 typed these tickets out by hand. Step 2 reads `payloads/snapshot.json`
+ * — the untouched response from a real GraphQL query against this repo — and
+ * runs it through `ingest`. The export's type is identical either way, which is
+ * the proof step 1's seam holds: everything behind this line changed
+ * completely, and not one line of `derive`, `layout`, `render` or `main` moved.
  *
- * Known gap, kept honest: no ticket here is assigned and none has an open PR,
- * because none does on GitHub today. So the `in-progress` and `in-review`
- * columns render empty until real data arrives. Those two rules are covered by
- * `test/derive.test.ts` rather than by this snapshot.
+ * Recording it also corrected the hand-typed version, which had invented five
+ * dependency edges that do not exist and claimed nobody was assigned when
+ * thirteen issues are. That is decision 2 earning its keep: hand-written test
+ * data encodes what you believe, and belief drifts.
+ *
+ * Step 3 replaces the saved file with a live fetch. This file goes away then.
  */
 
-import type { DomainGraph, Ticket } from '../domain/types'
+import { toDomainGraph } from '../ingest/ingest'
+import type { Snapshot } from '../ingest/payloads'
+import type { DomainGraph } from '../domain/types'
+import recorded from './payloads/snapshot.json'
 
-const REPO = 'cmengu/Github_Kanban'
-
-const issue = (
-  number: number,
-  title: string,
-  state: 'open' | 'closed',
-  labels: string[] = [],
-): Ticket => ({
-  key: `${REPO}#${number}`,
-  title,
-  state,
-  assignee: null,
-  labels,
-  prs: [],
-  url: `https://github.com/${REPO}/issues/${number}`,
-})
-
-export const demo: DomainGraph = {
-  tickets: [
-    issue(2, 'Prototype: does the rank=bucket fused layout actually work?', 'closed', ['wayfinder:prototype']),
-    issue(4, 'Decision: where do buckets live — Projects v2 Status or derived from state?', 'closed', ['wayfinder:grilling']),
-    issue(10, 'Research: GitHub API facts the spec depends on', 'closed', ['wayfinder:research']),
-    issue(12, 'Decision: auth, hosting, and liveness — PAT + static + polling?', 'closed', ['wayfinder:grilling']),
-    issue(13, 'Decision: the stack — React Flow + dagre/ELK + Vite + TypeScript?', 'closed', ['wayfinder:grilling']),
-    issue(15, 'Decision: live-refresh layout stability — re-layout each poll, or pin positions?', 'closed', ['wayfinder:grilling']),
-    issue(14, 'Wayfinder map: Overviewer', 'open', ['wayfinder:map']),
-    issue(16, 'Spec: Overviewer v2 — two-projection star-map viewer over GitHub-native ticket DAGs', 'open', ['ready-for-agent']),
-  ],
-  edges: [
-    // The map could not close until its decision tickets did.
-    { blocked: `${REPO}#14`, by: `${REPO}#4` },
-    { blocked: `${REPO}#14`, by: `${REPO}#13` },
-    { blocked: `${REPO}#14`, by: `${REPO}#15` },
-    { blocked: `${REPO}#14`, by: `${REPO}#12` },
-    // The spec was regenerated from the completed map.
-    { blocked: `${REPO}#16`, by: `${REPO}#14` },
-    // The prototype and the research fed the decisions that fed the map.
-    { blocked: `${REPO}#13`, by: `${REPO}#2` },
-    { blocked: `${REPO}#12`, by: `${REPO}#10` },
-  ],
-}
+export const demo: DomainGraph = toDomainGraph(recorded as Snapshot)
