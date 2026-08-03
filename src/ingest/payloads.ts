@@ -32,7 +32,6 @@ export interface IssuePayload {
   labels: Connection<{ name: string }>
   /** Native blocked-by relations (#5). */
   blockedBy: Connection<IssueRef>
-  closedByPullRequestsReferences: Connection<{ number: number }>
 }
 
 export interface PullPayload {

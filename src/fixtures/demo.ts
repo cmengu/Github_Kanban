@@ -16,9 +16,8 @@
  * Step 3 replaces the saved file with a live fetch. This file goes away then.
  */
 
-import { toDomainGraph } from '../ingest/ingest'
-import type { Snapshot } from '../ingest/payloads'
+import { readSnapshot, toDomainGraph } from '../ingest/ingest'
 import type { DomainGraph } from '../domain/types'
 import recorded from './payloads/snapshot.json'
 
-export const demo: DomainGraph = toDomainGraph(recorded as Snapshot)
+export const demo: DomainGraph = toDomainGraph(readSnapshot(recorded))

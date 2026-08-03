@@ -34,7 +34,6 @@ const issue = (number: number, over: Partial<Snapshot> & Record<string, unknown>
   assignees: conn<{ login: string }>([]),
   labels: conn<{ name: string }>([]),
   blockedBy: conn<{ number: number; repository: { nameWithOwner: string } }>([]),
-  closedByPullRequestsReferences: conn<{ number: number }>([]),
   ...over,
 })
 const pull = (number: number, over: Partial<PullPayload> = {}): PullPayload => ({
@@ -74,6 +73,7 @@ describe('the recorded snapshot — facts you can check on GitHub', () => {
     const of = (k: string) => g.edges.filter((e) => e.blocked === keyOf(REPO, Number(k))).map((e) => e.by)
     expect(of('4').sort()).toEqual([keyOf(REPO, 10), keyOf(REPO, 3)].sort())
     expect(of('11')).toEqual([keyOf(REPO, 4)])
+    expect(of('12')).toEqual([keyOf(REPO, 10)])
     expect(of('13')).toEqual([keyOf(REPO, 2)])
   })
 
@@ -100,15 +100,20 @@ describe('the recorded snapshot — facts you can check on GitHub', () => {
     })
   })
 
-  it('leaves the derived rules working on real data', () => {
-    for (const t of g.tickets) expect(['tickets', 'in-progress', 'in-review', 'done']).toContain(bucketOf(t))
-    expect(g.tickets.filter((t) => t.state === 'closed').length).toBeGreaterThan(0)
+  it('leaves the #4 bucket table working on real data', () => {
+    const bucket = (n: number) => bucketOf(g.tickets.find((t) => t.key === keyOf(REPO, n))!)
+    expect(bucket(2)).toBe('done')      // closed, and assigned — closed wins
+    expect(bucket(14)).toBe('tickets')  // open, unassigned, no PR
+    expect(bucket(16)).toBe('tickets')
+    expect(g.tickets.filter((t) => t.state === 'closed')).toHaveLength(14)
   })
 
   it('is deterministic, and does not care what order repos arrive in', () => {
     expect(toDomainGraph(snap)).toEqual(toDomainGraph(snap))
-    const doubled: Snapshot = { repos: [...snap.repos].reverse() }
-    expect(toDomainGraph(doubled).tickets).toEqual(g.tickets)
+    const two: Snapshot = { repos: [...snap.repos, repo([issue(99)])] }
+    const flipped: Snapshot = { repos: [...two.repos].reverse() }
+    expect(toDomainGraph(flipped).tickets.map((t) => t.key).sort())
+      .toEqual(toDomainGraph(two).tickets.map((t) => t.key).sort())
   })
 
   it('reports no problems for a clean recording', () => {
@@ -131,20 +136,43 @@ describe('edgesOf — verbatim, no filtering', () => {
 describe('pull requests — folded or orphaned, never both, never dropped', () => {
   it('folds a PR onto the issue it closes', () => {
     const r = repo([issue(1)], [pull(5, { closingIssuesReferences: conn([{ number: 1, repository: { nameWithOwner: REPO } }]) })])
-    expect(foldPulls(r).get(keyOf(REPO, 1))).toHaveLength(1)
-    expect(orphanPulls(r)).toEqual([])
+    expect(foldPulls({ repos: [r] }).get(keyOf(REPO, 1))).toHaveLength(1)
+    expect(orphanPulls({ repos: [r] })).toEqual([])
   })
 
   it('keeps a PR that closes nothing as its own node', () => {
     const r = repo([issue(1)], [pull(5)])
-    expect(foldPulls(r).size).toBe(0)
-    expect(orphanPulls(r).map((p) => p.key)).toEqual([pullKeyOf(REPO, 5)])
+    expect(foldPulls({ repos: [r] }).size).toBe(0)
+    expect(orphanPulls({ repos: [r] }).map((p) => p.key)).toEqual([pullKeyOf(REPO, 5)])
   })
 
   it('stacks several PRs on one issue', () => {
     const closes = conn([{ number: 1, repository: { nameWithOwner: REPO } }])
     const r = repo([issue(1)], [pull(5, { closingIssuesReferences: closes }), pull(6, { closingIssuesReferences: closes })])
-    expect(foldPulls(r).get(keyOf(REPO, 1))).toHaveLength(2)
+    expect(foldPulls({ repos: [r] }).get(keyOf(REPO, 1))).toHaveLength(2)
+  })
+
+  it('folds a PR onto an issue in a different repo', () => {
+    const a = { nameWithOwner: 'o/a', issues: conn([]), pullRequests: conn([pull(7, { closingIssuesReferences: conn([{ number: 1, repository: { nameWithOwner: 'o/b' } }]) })]) } as RepoPayload
+    const b = { nameWithOwner: 'o/b', issues: conn([issue(1)]), pullRequests: conn([]) } as RepoPayload
+    const g = toDomainGraph({ repos: [a, b] })
+
+    expect(g.tickets.find((t) => t.key === 'o/b#1')!.prs).toHaveLength(1)
+    expect(g.pulls).toEqual([])
+  })
+
+  it('keeps a PR whose issue was never loaded, rather than losing it', () => {
+    const r = repo([issue(1)], [pull(7, { closingIssuesReferences: conn([{ number: 99, repository: { nameWithOwner: REPO } }]) })])
+    const g = toDomainGraph({ repos: [r] })
+
+    expect(g.pulls.map((p) => p.key)).toEqual([pullKeyOf(REPO, 7)])
+    expect(ingestProblems({ repos: [r] }).join(' ')).toMatch(/closes .*#99, which was not loaded/)
+  })
+
+  it('counts the same PR once when pages overlap', () => {
+    const closes = conn([{ number: 1, repository: { nameWithOwner: REPO } }])
+    const r = repo([issue(1)], [pull(5, { closingIssuesReferences: closes }), pull(5, { closingIssuesReferences: closes })])
+    expect(toDomainGraph({ repos: [r] }).tickets[0]!.prs).toHaveLength(1)
   })
 
   it('puts an issue with an open PR in review, through the whole pipeline', () => {
@@ -170,6 +198,17 @@ describe('toPullRef — where draft and review-decision are interpreted', () => 
   it('lowercases the state', () => {
     expect(toPullRef(pull(1, { state: 'MERGED' })).state).toBe('merged')
   })
+
+  it('treats an unreadable state as closed, so it can never claim a review', () => {
+    const odd = toPullRef(pull(1, { state: 'WEIRD' as never, reviewDecision: 'REVIEW_REQUIRED' }))
+    expect(odd.state).toBe('closed')
+    expect(odd.awaitingReview).toBe(false)
+  })
+
+  it('reports an unreadable state rather than swallowing it', () => {
+    const r = repo([], [pull(1, { state: 'WEIRD' as never })])
+    expect(ingestProblems({ repos: [r] }).join(' ')).toMatch(/unrecognised state/)
+  })
 })
 
 describe('a bad entry is skipped, not fatal', () => {
@@ -189,6 +228,19 @@ describe('a bad entry is skipped, not fatal', () => {
   it('survives missing connection wrappers entirely', () => {
     const bare = { repos: [{ nameWithOwner: REPO } as never] }
     expect(toDomainGraph(bare).tickets).toEqual([])
+  })
+
+  it('does not throw when repos is not a list at all', () => {
+    const wrong = { repos: {} } as never
+    expect(() => toDomainGraph(wrong)).not.toThrow()
+    expect(() => ingestProblems(wrong)).not.toThrow()
+    expect(ingestProblems(wrong).join(' ')).toMatch(/not a list/)
+  })
+
+  it('reports a connection wrapper that is present but unreadable', () => {
+    const odd = { repos: [{ nameWithOwner: REPO, issues: 'nope', pullRequests: conn([]) } as never] }
+    expect(toDomainGraph(odd).tickets).toEqual([])
+    expect(ingestProblems(odd).join(' ')).toMatch(/issues list could not be read/)
   })
 
   it('names every skip and why, so nothing goes missing silently', () => {
