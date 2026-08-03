@@ -241,7 +241,7 @@ export function layout(g: DomainGraph, view: View): Layout {
   // Orphan pulls, after the tickets and in key order. The ticket-ish fields are
   // zeroed rather than invented: an unattached PR has no wave and no bucket,
   // which is exactly why it gets a strip instead of a column (decision 4).
-  for (const [, orphans] of [...pullsByRepo.entries()].sort()) {
+  for (const [, orphans] of [...pullsByRepo.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     orphans.forEach((p) => {
       const at = pos[p.key] as Point
       nodes.push({

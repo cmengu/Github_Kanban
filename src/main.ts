@@ -12,7 +12,7 @@ import './render/scene.css'
 import { chainOf } from './domain/derive'
 import { demo } from './fixtures/demo'
 import { ingestProblems, toDomainGraph } from './ingest/ingest'
-import { layout, type View } from './layout/layout'
+import { layout, type Layout, type View } from './layout/layout'
 import { clearConfig, loadConfig, parseRepo, saveConfig, type Config, type RepoRef } from './live/config'
 import { startLoop } from './live/loop'
 import type { Poll } from './live/client'
@@ -34,9 +34,11 @@ let current: DomainGraph = demo
 let stopLoop: (() => void) | null = null
 
 /** The whole data path in one line, as in step 1 — the graph is now an argument. */
-const draw = (g: DomainGraph): void => {
+const draw = (g: DomainGraph): Layout => {
   current = g
-  mount(svg, g, layout(g, view))
+  const l = layout(g, view)
+  mount(svg, g, l)
+  return l
 }
 
 const showProblems = (problems: string[]): void => {
@@ -59,10 +61,10 @@ function onPoll(p: Poll): void {
   if (p.snapshot == null) return
   const g = toDomainGraph(p.snapshot)
   showProblems([...ingestProblems(p.snapshot), ...p.problems])
-  draw(g)
+  const l = draw(g)
   const done = g.tickets.filter((t) => t.state === 'closed').length
   console.log(
-    `overviewer: ${g.tickets.length} tickets · ${done} done · canvas ${layout(g, view).height}px · ` +
+    `overviewer: ${g.tickets.length} tickets · ${done} done · canvas ${l.height}px · ` +
       `cost ${p.cost.restCalls} probes, ${p.cost.points} points, ${p.cost.skipped} skipped`,
   )
 }

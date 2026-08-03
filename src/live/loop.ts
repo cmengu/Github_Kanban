@@ -72,10 +72,11 @@ export function startLoop(cfg: Config, opts: LoopOpts): () => void {
   const lastByRepo = new Map<string, RepoPayload>()
 
   /**
-   * A partial fetch knows only the repos that moved. Fold it into what earlier
-   * polls saw, so the emitted snapshot is always the whole picture.
+   * A partial fetch knows only the repos that moved. Fold it into `lastByRepo`
+   * — the mutation is the point — and hand back the whole picture, so a poll
+   * that fetched one repo never blanks the other lanes.
    */
-  const merged = (snap: Snapshot): Snapshot => {
+  const foldIntoLast = (snap: Snapshot): Snapshot => {
     for (const repo of snap.repos) {
       if (typeof repo?.nameWithOwner === 'string') lastByRepo.set(repo.nameWithOwner, repo)
     }
@@ -92,7 +93,7 @@ export function startLoop(cfg: Config, opts: LoopOpts): () => void {
     if (stopped) return
     etags = p.etags
 
-    opts.onPoll({ ...p, snapshot: p.snapshot ? merged(p.snapshot) : null })
+    opts.onPoll({ ...p, snapshot: p.snapshot ? foldIntoLast(p.snapshot) : null })
 
     if (p.authFailed) {
       stopped = true

@@ -33,9 +33,15 @@ export interface PollCost {
   skipped: number
 }
 
+/** GitHub said "stop asking" — exactly what `backoffFor` needs to pick a wait. */
+export interface RateLimited {
+  status: number
+  headers: Headers
+}
+
 /** One cycle's result. `null` snapshot is the common case and the cheap one. */
 export interface Poll {
-  /** `null` means nothing changed — do not redraw. */
+  /** `null` means nothing changed (or nothing arrived) — do not redraw. */
   snapshot: Snapshot | null
   /** Carried into the next poll; the app holds it, not this module. */
   etags: Etags
@@ -44,8 +50,8 @@ export interface Poll {
   cost: PollCost
   /** True when GitHub refused the token — the caller signs out (decision 3). */
   authFailed?: boolean
-  /** Set when GitHub rate-limited us: what `backoffFor` needs to pick a wait. */
-  limited?: { status: number; headers: Headers }
+  /** Set when GitHub rate-limited us, so the loop can back off. */
+  limited?: RateLimited
 }
 
 export interface PollOpts {
@@ -83,14 +89,14 @@ export async function probeRepos(
   cfg: Config,
   etags: Etags,
   opts: PollOpts = {},
-): Promise<{ changed: RepoRef[]; etags: Etags; problems: string[]; restCalls: number; authFailed: boolean; limited?: { status: number; headers: Headers } }> {
+): Promise<{ changed: RepoRef[]; etags: Etags; problems: string[]; restCalls: number; authFailed: boolean; limited?: RateLimited }> {
   const doFetch = opts.fetchFn ?? fetch
   const changed: RepoRef[] = []
   const next: Etags = { ...etags }
   const problems: string[] = []
   let restCalls = 0
   let authFailed = false
-  let limited: { status: number; headers: Headers } | undefined
+  let limited: RateLimited | undefined
 
   for (const repo of cfg.repos) {
     const key = repoKey(repo)
@@ -141,9 +147,19 @@ export async function fetchRepos(
   cfg: Config,
   repos: RepoRef[],
   opts: PollOpts = {},
-): Promise<{ snapshot: Snapshot; problems: string[]; points: number; authFailed: boolean; limited?: { status: number; headers: Headers } }> {
+): Promise<{ snapshot: Snapshot | null; problems: string[]; points: number; authFailed: boolean; limited?: RateLimited }> {
   const doFetch = opts.fetchFn ?? fetch
   const { query, variables } = batchQuery(repos)
+
+  // A `null` snapshot means "nothing arrived", never "everything vanished" —
+  // an empty-but-real snapshot on a failed fetch would blank every lane.
+  const failed = (problem: string, over: { authFailed?: boolean; limited?: RateLimited } = {}) => ({
+    snapshot: null,
+    problems: [problem],
+    points: 0,
+    authFailed: over.authFailed ?? false,
+    ...(over.limited ? { limited: over.limited } : {}),
+  })
 
   try {
     const res = await doFetch(`${API}/graphql`, {
@@ -152,31 +168,10 @@ export async function fetchRepos(
       body: JSON.stringify({ query, variables }),
     })
 
-    if (res.status === 401) {
-      return {
-        snapshot: { repos: [] },
-        problems: ['GitHub refused the token (401) — signed out'],
-        points: 0,
-        authFailed: true,
-      }
-    }
-    if (rateLimited(res.status, res.headers)) {
-      return {
-        snapshot: { repos: [] },
-        problems: [`rate limited (${res.status}) — backing off`],
-        points: 0,
-        authFailed: false,
-        limited: { status: res.status, headers: res.headers },
-      }
-    }
-    if (!res.ok) {
-      return {
-        snapshot: { repos: [] },
-        problems: [`GitHub answered ${res.status} to the batched query`],
-        points: 0,
-        authFailed: false,
-      }
-    }
+    if (res.status === 401) return failed('GitHub refused the token (401) — signed out', { authFailed: true })
+    if (rateLimited(res.status, res.headers))
+      return failed(`rate limited (${res.status}) — backing off`, { limited: { status: res.status, headers: res.headers } })
+    if (!res.ok) return failed(`GitHub answered ${res.status} to the batched query`)
 
     const body: unknown = await res.json()
     const read = readBatch(body, repos)
@@ -188,12 +183,7 @@ export async function fetchRepos(
       authFailed: false,
     }
   } catch (e) {
-    return {
-      snapshot: { repos: [] },
-      problems: [`fetch failed — ${e instanceof Error ? e.message : 'network error'}`],
-      points: 0,
-      authFailed: false,
-    }
+    return failed(`fetch failed — ${e instanceof Error ? e.message : 'network error'}`)
   }
 }
 
@@ -209,7 +199,7 @@ export async function pollOnce(cfg: Config, etags: Etags, opts: PollOpts = {}): 
   if (opts.fullSweep) {
     const full = await fetchRepos(cfg, cfg.repos, opts)
     return {
-      snapshot: full.authFailed || full.limited ? null : full.snapshot,
+      snapshot: full.snapshot,
       etags,
       problems: full.problems,
       cost: { restCalls: 0, points: full.points, skipped: 0 },
@@ -230,9 +220,24 @@ export async function pollOnce(cfg: Config, etags: Etags, opts: PollOpts = {}): 
   if (probe.authFailed || probe.changed.length === 0) return base
 
   const fetched = await fetchRepos(cfg, probe.changed, opts)
+
+  // The probe advanced these repos' stamps, but their data never arrived. Roll
+  // the stamps back, or the next probe answers 304 and the change is silently
+  // lost until the full sweep — a several-minute blind spot.
+  const nextEtags = { ...probe.etags }
+  if (fetched.snapshot == null) {
+    for (const repo of probe.changed) {
+      const key = repoKey(repo)
+      const old = etags[key]
+      if (old != null) nextEtags[key] = old
+      else delete nextEtags[key]
+    }
+  }
+
   return {
     ...base,
-    snapshot: fetched.authFailed || fetched.limited ? null : fetched.snapshot,
+    snapshot: fetched.snapshot,
+    etags: nextEtags,
     problems: [...probe.problems, ...fetched.problems],
     cost: { ...base.cost, points: fetched.points },
     ...(fetched.authFailed ? { authFailed: true } : {}),

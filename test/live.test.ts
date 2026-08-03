@@ -259,6 +259,33 @@ describe('client — 304 first, fetch second', () => {
     }
   })
 
+  it('a failed GraphQL fetch yields null, never an empty-but-real snapshot', async () => {
+    const { fetchFn } = fakeFetch((url) =>
+      url.includes('graphql') ? { status: 502 } : { status: 200, headers: { etag: 'W/"new"' } },
+    )
+
+    const p = await pollOnce(cfg(['o/a']), { 'o/a': 'W/"old"' }, { fetchFn })
+
+    // null means "nothing arrived, do not redraw" — {repos: []} would blank
+    // every lane on a transient 502.
+    expect(p.snapshot).toBeNull()
+    expect(p.problems.some((x) => x.includes('502'))).toBe(true)
+    // And the stamp rolls back: the probe advanced it, but the data never
+    // arrived, so the next probe must answer 200 again, not 304.
+    expect(p.etags['o/a']).toBe('W/"old"')
+  })
+
+  it('rolls back a first-poll stamp too, when the fetch behind it fails', async () => {
+    const { fetchFn } = fakeFetch((url) =>
+      url.includes('graphql') ? { status: 502 } : { status: 200, headers: { etag: 'W/"new"' } },
+    )
+
+    const p = await pollOnce(cfg(['o/a']), {}, { fetchFn })
+
+    expect(p.snapshot).toBeNull()
+    expect(p.etags['o/a']).toBeUndefined()
+  })
+
   it('reports GraphQL partial failure without blanking the healthy repos', async () => {
     const { fetchFn } = fakeFetch((url) =>
       url.includes('graphql')
