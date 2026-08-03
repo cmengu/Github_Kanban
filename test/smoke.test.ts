@@ -26,13 +26,17 @@ describe('the fixture renders a coherent fused view', () => {
     const byKey = new Map(demo.tickets.map((t) => [t.key, t]))
     const laneOf = new Map(l.lanes.map((lane) => [lane.repo, lane]))
 
-    expect(l.nodes).toHaveLength(demo.tickets.length)
+    // Step 3: every ticket and every orphan pull is a node — nothing extra.
+    expect(l.nodes.filter((n) => n.kind === 'ticket')).toHaveLength(demo.tickets.length)
+    expect(l.nodes.filter((n) => n.kind === 'pull')).toHaveLength(demo.pulls.length)
     for (const n of l.nodes) {
-      expect(n.bucket).toBe(bucketOf(byKey.get(n.key)!))
-      expect(n.wave).toBe(w.get(n.key))
-      const lane = laneOf.get(repoOf(n.key))!
+      const lane = laneOf.get(n.lane)!
       expect(n.y).toBeGreaterThanOrEqual(lane.y)
       expect(n.y).toBeLessThanOrEqual(lane.y + lane.height)
+      if (n.kind === 'pull') continue
+      expect(n.bucket).toBe(bucketOf(byKey.get(n.key)!))
+      expect(n.wave).toBe(w.get(n.key))
+      expect(n.lane).toBe(repoOf(n.key))
     }
   })
 
@@ -46,27 +50,32 @@ describe('the fixture renders a coherent fused view', () => {
 })
 
 describe('mount / setFocus — data changes rebuild, pointer moves do not', () => {
-  it('draws one group per ticket and one path per surviving edge', () => {
+  it('draws one group per ticket and orphan pull, one path per surviving edge', () => {
     const svg = scene()
     const l = layout(demo, 'map')
     mount(svg, demo, l)
 
-    expect(svg.querySelectorAll('g.node')).toHaveLength(demo.tickets.length)
+    expect(svg.querySelectorAll('g.node')).toHaveLength(demo.tickets.length + demo.pulls.length)
+    expect(svg.querySelectorAll('g.node.is-pull')).toHaveLength(demo.pulls.length)
+    expect(svg.querySelectorAll('g.node.is-pull .pull-ring')).toHaveLength(demo.pulls.length)
     expect(svg.querySelectorAll('g.edge')).toHaveLength(l.paths.length)
     expect(svg.querySelectorAll('text.col-label')).toHaveLength(l.columns.length)
     expect(svg.getAttribute('viewBox')).toBe(`0 0 ${l.width} ${l.height}`)
   })
 
-  it('links every star through to its issue on GitHub', () => {
+  it('links every star through to its issue or pull request on GitHub', () => {
     const svg = scene()
     mount(svg, demo, layout(demo, 'map'))
 
-    const byKey = new Map(demo.tickets.map((t) => [t.key, t]))
+    const urlByKey = new Map<string, string>([
+      ...demo.tickets.map((t) => [t.key, t.url] as const),
+      ...demo.pulls.map((p) => [p.key, p.url] as const),
+    ])
     const links = svg.querySelectorAll('g.node a')
-    expect(links).toHaveLength(demo.tickets.length)
+    expect(links).toHaveLength(demo.tickets.length + demo.pulls.length)
     for (const a of links) {
       const key = a.closest('g.node')!.getAttribute('data-key')!
-      expect(a.getAttribute('href')).toBe(byKey.get(key)!.url)
+      expect(a.getAttribute('href')).toBe(urlByKey.get(key)!)
     }
   })
 
@@ -102,7 +111,7 @@ describe('mount / setFocus — data changes rebuild, pointer moves do not', () =
     mount(svg, demo, layout(demo, 'map'))
     mount(svg, demo, layout(demo, 'board'))
 
-    expect(svg.querySelectorAll('g.node')).toHaveLength(demo.tickets.length)
+    expect(svg.querySelectorAll('g.node')).toHaveLength(demo.tickets.length + demo.pulls.length)
     expect(svg.querySelectorAll('defs')).toHaveLength(1)
   })
 })

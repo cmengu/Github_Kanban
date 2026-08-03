@@ -13,7 +13,9 @@
  * thirteen issues are. That is decision 2 earning its keep: hand-written test
  * data encodes what you believe, and belief drifts.
  *
- * Step 3 replaces the saved file with a live fetch. This file goes away then.
+ * Step 3 added the live fetch beside this file rather than instead of it: the
+ * demo is what boots when no token is saved, and how a live bug is reproduced
+ * offline.
  */
 
 import { readSnapshot, toDomainGraph } from '../ingest/ingest'

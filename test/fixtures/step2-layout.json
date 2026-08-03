@@ -1,0 +1,822 @@
+{
+  "map": {
+    "pos": {
+      "cmengu/Github_Kanban#1": {
+        "x": 60,
+        "y": 85
+      },
+      "cmengu/Github_Kanban#10": {
+        "x": 60,
+        "y": 159
+      },
+      "cmengu/Github_Kanban#11": {
+        "x": 60,
+        "y": 233
+      },
+      "cmengu/Github_Kanban#12": {
+        "x": 60,
+        "y": 307
+      },
+      "cmengu/Github_Kanban#13": {
+        "x": 60,
+        "y": 381
+      },
+      "cmengu/Github_Kanban#15": {
+        "x": 60,
+        "y": 455
+      },
+      "cmengu/Github_Kanban#2": {
+        "x": 60,
+        "y": 529
+      },
+      "cmengu/Github_Kanban#3": {
+        "x": 60,
+        "y": 603
+      },
+      "cmengu/Github_Kanban#4": {
+        "x": 60,
+        "y": 677
+      },
+      "cmengu/Github_Kanban#5": {
+        "x": 60,
+        "y": 751
+      },
+      "cmengu/Github_Kanban#6": {
+        "x": 60,
+        "y": 825
+      },
+      "cmengu/Github_Kanban#7": {
+        "x": 60,
+        "y": 899
+      },
+      "cmengu/Github_Kanban#8": {
+        "x": 60,
+        "y": 973
+      },
+      "cmengu/Github_Kanban#9": {
+        "x": 60,
+        "y": 1047
+      },
+      "cmengu/Github_Kanban#14": {
+        "x": 250,
+        "y": 85
+      },
+      "cmengu/Github_Kanban#16": {
+        "x": 250,
+        "y": 159
+      }
+    },
+    "nodes": [
+      {
+        "key": "cmengu/Github_Kanban#1",
+        "x": 60,
+        "y": 85,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#10",
+        "x": 60,
+        "y": 159,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#11",
+        "x": 60,
+        "y": 233,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#12",
+        "x": 60,
+        "y": 307,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#13",
+        "x": 60,
+        "y": 381,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#14",
+        "x": 250,
+        "y": 85,
+        "r": 9,
+        "band": 1,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "tickets",
+        "wave": 1,
+        "gated": 0,
+        "frontier": true,
+        "blocked": false,
+        "done": false,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#15",
+        "x": 60,
+        "y": 455,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#16",
+        "x": 250,
+        "y": 159,
+        "r": 9,
+        "band": 1,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "tickets",
+        "wave": 1,
+        "gated": 0,
+        "frontier": true,
+        "blocked": false,
+        "done": false,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#2",
+        "x": 60,
+        "y": 529,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#3",
+        "x": 60,
+        "y": 603,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#4",
+        "x": 60,
+        "y": 677,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#5",
+        "x": 60,
+        "y": 751,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#6",
+        "x": 60,
+        "y": 825,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#7",
+        "x": 60,
+        "y": 899,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#8",
+        "x": 60,
+        "y": 973,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#9",
+        "x": 60,
+        "y": 1047,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      }
+    ],
+    "lanes": [
+      {
+        "repo": "cmengu/Github_Kanban",
+        "y": 48,
+        "height": 1036,
+        "weight": 0
+      }
+    ],
+    "columns": [
+      {
+        "band": 0,
+        "x": 60,
+        "label": "Done"
+      },
+      {
+        "band": 1,
+        "x": 250,
+        "label": "Ready now"
+      }
+    ],
+    "paths": [
+      {
+        "blocked": "cmengu/Github_Kanban#11",
+        "by": "cmengu/Github_Kanban#4",
+        "d": "M 60 677 C 90 677, 30 233, 60 233",
+        "dot": {
+          "x": 64.47,
+          "y": 672.4
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#12",
+        "by": "cmengu/Github_Kanban#10",
+        "d": "M 60 159 C 90 159, 30 307, 60 307",
+        "dot": {
+          "x": 64.47,
+          "y": 160.53
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#13",
+        "by": "cmengu/Github_Kanban#2",
+        "d": "M 60 529 C 90 529, 30 381, 60 381",
+        "dot": {
+          "x": 64.47,
+          "y": 527.47
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#4",
+        "by": "cmengu/Github_Kanban#10",
+        "d": "M 60 159 C 90 159, 30 677, 60 677",
+        "dot": {
+          "x": 64.47,
+          "y": 164.37
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#4",
+        "by": "cmengu/Github_Kanban#3",
+        "d": "M 60 603 C 90 603, 30 677, 60 677",
+        "dot": {
+          "x": 64.47,
+          "y": 603.77
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      }
+    ],
+    "width": 310,
+    "height": 1132
+  },
+  "board": {
+    "pos": {
+      "cmengu/Github_Kanban#14": {
+        "x": 60,
+        "y": 85
+      },
+      "cmengu/Github_Kanban#16": {
+        "x": 60,
+        "y": 159
+      },
+      "cmengu/Github_Kanban#1": {
+        "x": 630,
+        "y": 85
+      },
+      "cmengu/Github_Kanban#10": {
+        "x": 630,
+        "y": 159
+      },
+      "cmengu/Github_Kanban#11": {
+        "x": 630,
+        "y": 233
+      },
+      "cmengu/Github_Kanban#12": {
+        "x": 630,
+        "y": 307
+      },
+      "cmengu/Github_Kanban#13": {
+        "x": 630,
+        "y": 381
+      },
+      "cmengu/Github_Kanban#15": {
+        "x": 630,
+        "y": 455
+      },
+      "cmengu/Github_Kanban#2": {
+        "x": 630,
+        "y": 529
+      },
+      "cmengu/Github_Kanban#3": {
+        "x": 630,
+        "y": 603
+      },
+      "cmengu/Github_Kanban#4": {
+        "x": 630,
+        "y": 677
+      },
+      "cmengu/Github_Kanban#5": {
+        "x": 630,
+        "y": 751
+      },
+      "cmengu/Github_Kanban#6": {
+        "x": 630,
+        "y": 825
+      },
+      "cmengu/Github_Kanban#7": {
+        "x": 630,
+        "y": 899
+      },
+      "cmengu/Github_Kanban#8": {
+        "x": 630,
+        "y": 973
+      },
+      "cmengu/Github_Kanban#9": {
+        "x": 630,
+        "y": 1047
+      }
+    },
+    "nodes": [
+      {
+        "key": "cmengu/Github_Kanban#1",
+        "x": 630,
+        "y": 85,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#10",
+        "x": 630,
+        "y": 159,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#11",
+        "x": 630,
+        "y": 233,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#12",
+        "x": 630,
+        "y": 307,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#13",
+        "x": 630,
+        "y": 381,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#14",
+        "x": 60,
+        "y": 85,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "tickets",
+        "wave": 1,
+        "gated": 0,
+        "frontier": true,
+        "blocked": false,
+        "done": false,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#15",
+        "x": 630,
+        "y": 455,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#16",
+        "x": 60,
+        "y": 159,
+        "r": 9,
+        "band": 0,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "tickets",
+        "wave": 1,
+        "gated": 0,
+        "frontier": true,
+        "blocked": false,
+        "done": false,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#2",
+        "x": 630,
+        "y": 529,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#3",
+        "x": 630,
+        "y": 603,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#4",
+        "x": 630,
+        "y": 677,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#5",
+        "x": 630,
+        "y": 751,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#6",
+        "x": 630,
+        "y": 825,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#7",
+        "x": 630,
+        "y": 899,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#8",
+        "x": 630,
+        "y": 973,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      },
+      {
+        "key": "cmengu/Github_Kanban#9",
+        "x": 630,
+        "y": 1047,
+        "r": 9,
+        "band": 3,
+        "lane": "cmengu/Github_Kanban",
+        "bucket": "done",
+        "wave": 0,
+        "gated": 0,
+        "frontier": false,
+        "blocked": false,
+        "done": true,
+        "rings": 0,
+        "humanGated": false
+      }
+    ],
+    "lanes": [
+      {
+        "repo": "cmengu/Github_Kanban",
+        "y": 48,
+        "height": 1036,
+        "weight": 0
+      }
+    ],
+    "columns": [
+      {
+        "band": 0,
+        "x": 60,
+        "label": "Tickets"
+      },
+      {
+        "band": 1,
+        "x": 250,
+        "label": "In progress"
+      },
+      {
+        "band": 2,
+        "x": 440,
+        "label": "In review"
+      },
+      {
+        "band": 3,
+        "x": 630,
+        "label": "Done"
+      }
+    ],
+    "paths": [
+      {
+        "blocked": "cmengu/Github_Kanban#11",
+        "by": "cmengu/Github_Kanban#4",
+        "d": "M 630 677 C 660 677, 600 233, 630 233",
+        "dot": {
+          "x": 634.47,
+          "y": 672.4
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#12",
+        "by": "cmengu/Github_Kanban#10",
+        "d": "M 630 159 C 660 159, 600 307, 630 307",
+        "dot": {
+          "x": 634.47,
+          "y": 160.53
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#13",
+        "by": "cmengu/Github_Kanban#2",
+        "d": "M 630 529 C 660 529, 600 381, 630 381",
+        "dot": {
+          "x": 634.47,
+          "y": 527.47
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#4",
+        "by": "cmengu/Github_Kanban#10",
+        "d": "M 630 159 C 660 159, 600 677, 630 677",
+        "dot": {
+          "x": 634.47,
+          "y": 164.37
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      },
+      {
+        "blocked": "cmengu/Github_Kanban#4",
+        "by": "cmengu/Github_Kanban#3",
+        "d": "M 630 603 C 660 603, 600 677, 630 677",
+        "dot": {
+          "x": 634.47,
+          "y": 603.77
+        },
+        "blockerOpen": false,
+        "crossLane": false
+      }
+    ],
+    "width": 690,
+    "height": 1132
+  }
+}

@@ -23,6 +23,12 @@ export interface Point {
 
 export interface LayoutNode {
   key: TicketKey
+  /**
+   * What this node is (step 3). A `'pull'` is an orphan pull request standing
+   * in its lane's strip: the ticket-ish fields below are zeroed on it, and the
+   * renderer branches on this rather than guessing from the key's punctuation.
+   */
+  kind: 'ticket' | 'pull'
   x: number
   y: number
   /** Orb radius, grown from how much open work this ticket gates (#8). */
@@ -51,6 +57,12 @@ export interface Lane {
   height: number
   /** Total open work this repo's tickets gate — what orders the lanes (#7). */
   weight: number
+  /**
+   * Where this lane's strip of unattached pull requests sits (step 3), or
+   * `null` when the lane has none — so a lane without orphans is exactly as
+   * tall as it was before.
+   */
+  pullStripY: number | null
 }
 
 /** One column heading: which band, where, and what to call it. */
@@ -90,6 +102,10 @@ const LANE_GAP = 40
 const R_BASE = 9
 const R_GROWTH = 5
 const R_MAX = 30
+/** The orphan-PR strip (step 3): fixed ring size, fixed spacing, one thin row. */
+const PULL_STRIP_H = 34
+const PULL_GAP = 56
+const R_PULL = 7
 /** How far along the curve the blocker-end dot sits. */
 const DOT_T = 0.06
 
@@ -132,7 +148,9 @@ export function layout(g: DomainGraph, view: View): Layout {
       .filter((t) => repoOf(t.key) === repo)
       .reduce((sum, t) => sum + (gatedByKey.get(t.key) ?? 0), 0)
 
-  const repos = [...new Set(g.tickets.map((t) => repoOf(t.key)))].sort()
+  // A repo can appear with only orphan pulls and no tickets — it still gets a
+  // lane, or the work step 2 kept would be invisible again (step 3, story 15).
+  const repos = [...new Set([...g.tickets.map((t) => repoOf(t.key)), ...g.pulls.map((p) => p.repo)])].sort()
   const laneWeight = new Map(repos.map((repo) => [repo, weightOf(repo)]))
   repos.sort((a, b) => (laneWeight.get(b) ?? 0) - (laneWeight.get(a) ?? 0) || (a < b ? -1 : a > b ? 1 : 0))
 
@@ -153,6 +171,14 @@ export function layout(g: DomainGraph, view: View): Layout {
   const pos: Record<TicketKey, Point> = {}
   const rowOf = new Map<TicketKey, number>()
 
+  // Orphan pulls per lane, key-sorted so their strip order is stable (step 3).
+  const pullsByRepo = new Map<string, typeof g.pulls>()
+  for (const p of [...g.pulls].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))) {
+    const list = pullsByRepo.get(p.repo)
+    if (list) list.push(p)
+    else pullsByRepo.set(p.repo, [p])
+  }
+
   let cursor = PAD_Y
   for (const repo of repos) {
     const mine = slots.filter((s) => s.repo === repo)
@@ -168,8 +194,20 @@ export function layout(g: DomainGraph, view: View): Layout {
         pos[key] = { x: PAD_X + band * COL_W, y: cursor + row * ROW_H + ROW_H / 2 }
       })
     }
-    const height = rows * ROW_H
-    lanes.push({ repo, y: cursor, height, weight: laneWeight.get(repo) ?? 0 })
+
+    // The strip: a thin extra row along the bottom of the lane, only when the
+    // lane has orphans — a lane without them is exactly as tall as in step 2.
+    const orphans = pullsByRepo.get(repo) ?? []
+    const rowsHeight = rows * ROW_H
+    const pullStripY = orphans.length > 0 ? cursor + rowsHeight + PULL_STRIP_H / 2 : null
+    if (pullStripY != null) {
+      orphans.forEach((p, i) => {
+        pos[p.key] = { x: PAD_X + i * PULL_GAP, y: pullStripY }
+      })
+    }
+
+    const height = rowsHeight + (pullStripY != null ? PULL_STRIP_H : 0)
+    lanes.push({ repo, y: cursor, height, weight: laneWeight.get(repo) ?? 0, pullStripY })
     cursor += height + LANE_GAP
   }
 
@@ -182,6 +220,7 @@ export function layout(g: DomainGraph, view: View): Layout {
       const bucket = bucketOf(t)
       return {
         key: t.key,
+        kind: 'ticket' as const,
         x: at.x,
         y: at.y,
         r: round(radiusOf(gated)),
@@ -198,6 +237,32 @@ export function layout(g: DomainGraph, view: View): Layout {
         humanGated: t.labels.includes('human-gated'),
       }
     })
+
+  // Orphan pulls, after the tickets and in key order. The ticket-ish fields are
+  // zeroed rather than invented: an unattached PR has no wave and no bucket,
+  // which is exactly why it gets a strip instead of a column (decision 4).
+  for (const [, orphans] of [...pullsByRepo.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    orphans.forEach((p) => {
+      const at = pos[p.key] as Point
+      nodes.push({
+        key: p.key,
+        kind: 'pull',
+        x: at.x,
+        y: at.y,
+        r: R_PULL,
+        band: -1,
+        lane: p.repo,
+        bucket: 'tickets',
+        wave: 0,
+        gated: 0,
+        frontier: false,
+        blocked: false,
+        done: p.state !== 'open',
+        rings: 0,
+        humanGated: false,
+      })
+    })
+  }
 
   // ---- edges, already curved and ready to draw ----
   const paths: EdgePath[] = []
@@ -238,13 +303,15 @@ export function layout(g: DomainGraph, view: View): Layout {
   }
 
   const lastLane = lanes[lanes.length - 1]
+  // A long strip may stick out past the last column; the canvas must hold it.
+  const widestStrip = Math.max(0, ...[...pullsByRepo.values()].map((list) => list.length))
   return {
     pos,
     nodes,
     lanes,
     columns,
     paths,
-    width: PAD_X * 2 + maxBand * COL_W,
+    width: Math.max(PAD_X * 2 + maxBand * COL_W, widestStrip > 0 ? PAD_X * 2 + (widestStrip - 1) * PULL_GAP : 0),
     height: lastLane ? lastLane.y + lastLane.height + PAD_Y : PAD_Y * 2,
   }
 }

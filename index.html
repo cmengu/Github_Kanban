@@ -9,8 +9,30 @@
     <header>
       <h1>Overviewer</h1>
       <button id="view-toggle" type="button">Star map ⇄ Board</button>
-      <span class="note">step 1 · fixture data · no network</span>
+      <span class="note" id="mode-note">demo data · paste a token to go live</span>
+      <button id="sign-out" type="button" hidden>Sign out</button>
     </header>
+
+    <!-- Two inputs and a button, no framework: a page for one person on their
+         own machine, and every dependency added here ships forever. -->
+    <form id="setup" hidden>
+      <label for="token">Fine-grained personal access token</label>
+      <input id="token" type="password" autocomplete="off" required
+             placeholder="github_pat_…" />
+      <p class="hint">
+        Scope it to the repos below with: Issues read and write · Pull requests
+        read · Metadata read. Stored in this tab only — closing the tab forgets it.
+      </p>
+      <label for="repos">Repositories, one <code>owner/name</code> per line</label>
+      <textarea id="repos" rows="3" required placeholder="cmengu/Github_Kanban"></textarea>
+      <p class="hint error" id="setup-error" hidden></p>
+      <button type="submit">Watch these repos</button>
+    </form>
+
+    <!-- One place for "here is what I could not show you": ingest skips and
+         network problems land together, never silently. -->
+    <ul id="problems" hidden></ul>
+
     <svg id="scene" role="img" aria-label="Ticket dependency map"></svg>
     <script type="module" src="/src/main.ts"></script>
   </body>
