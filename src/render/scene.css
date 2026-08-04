@@ -124,6 +124,20 @@ header .note { font-family: var(--mono); font-size: 11px; color: var(--faint); }
   }
 }
 
+/* ---- motion (step 4) ----
+   Every position during a glide is written by choreo.ts, frame by frame, so
+   there is deliberately no transition on .node here: two clocks driving one
+   star is how animations end up fighting each other. What lives in CSS is only
+   what the motion layer never touches — which is why the opacity transition at
+   the bottom of this file is switched off, inline, on exactly the elements a
+   glide is driving, and left alone everywhere else.
+
+   A leaving star is a copy of a deleted element: it must look alive and behave
+   like nothing at all. An entering star needs no rule — its first frame is
+   written before the browser paints, so it never flashes at full brightness. */
+.ghosts { pointer-events: none; }
+.node.is-ghost .hit, .node.is-ghost .halo { display: none; }
+
 /* ---- hover focus: class toggles only, never a rebuild ---- */
 #scene.has-focus .node { opacity: 0.22; }
 #scene.has-focus .node.is-lit { opacity: 1; }

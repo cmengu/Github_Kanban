@@ -16,6 +16,8 @@ import { layout, type Layout, type View } from './layout/layout'
 import { clearConfig, loadConfig, parseRepo, saveConfig, type Config, type RepoRef } from './live/config'
 import { startLoop } from './live/loop'
 import type { Poll } from './live/client'
+import { diffLayouts, type LayoutDelta } from './motion/delta'
+import { plan, play, snapshotExits } from './motion/choreo'
 import { mount, setFocus } from './render/scene'
 import type { DomainGraph } from './domain/types'
 
@@ -32,13 +34,57 @@ const signOut = document.querySelector<HTMLButtonElement>('#sign-out')!
 let view: View = 'map'
 let current: DomainGraph = demo
 let stopLoop: (() => void) | null = null
+/** The picture on screen right now — the only thing a glide is measured from. */
+let shown: Layout | null = null
+let cancelGlide: (() => void) | null = null
 
-/** The whole data path in one line, as in step 1 — the graph is now an argument. */
+const reduced = (): boolean =>
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/**
+ * The whole data path in one line, as in step 1 — the graph is now an argument.
+ * A cut: the new picture simply replaces the old one, with nothing carried
+ * across. Boot, sign-out and a refused token all use this, because there is no
+ * honest story that connects what was on screen to what comes next.
+ */
 const draw = (g: DomainGraph): Layout => {
+  cancelGlide?.()
+  cancelGlide = null
   current = g
   const l = layout(g, view)
   mount(svg, g, l)
+  shown = l
   return l
+}
+
+/**
+ * The same redraw, with the difference shown rather than swapped in.
+ *
+ * The order matters and is the whole trick: copy the leavers *before* the
+ * rebuild, mount the truth, and only then replay how it got there. Any glide
+ * already running is cancelled first — it snaps to what is mounted, so the new
+ * one always measures from a real picture and never from a half-finished one.
+ */
+const glideTo = (g: DomainGraph): LayoutDelta | null => {
+  const from = shown
+  if (!from) {
+    draw(g)
+    return null
+  }
+
+  cancelGlide?.()
+  const next = layout(g, view)
+  const d = diffLayouts(from, next)
+  const ghosts = snapshotExits(svg, d)
+
+  current = g
+  mount(svg, g, next)
+  shown = next
+  // Done sits at the left of the star map and at the right of the board, and
+  // the cascade starts there either way.
+  const p = plan(d, { reduced: reduced(), doneSide: view === 'map' ? 'left' : 'right' })
+  cancelGlide = play(svg, from, next, p, ghosts)
+  return d
 }
 
 const showProblems = (problems: string[]): void => {
@@ -61,10 +107,15 @@ function onPoll(p: Poll): void {
   if (p.snapshot == null) return
   const g = toDomainGraph(p.snapshot)
   showProblems([...ingestProblems(p.snapshot), ...p.problems])
-  const l = draw(g)
+  const d = glideTo(g)
+  const l = shown!
   const done = g.tickets.filter((t) => t.state === 'closed').length
+  // The instrument now reports the change as well as the picture: a poll that
+  // costs points but moves nothing is a different problem from one that moves
+  // half the canvas, and the line has to be able to tell them apart.
   console.log(
     `overviewer: ${g.tickets.length} tickets · ${done} done · canvas ${l.height}px · ` +
+      `moved ${d?.moved.length ?? 0} · entered ${d?.entered.length ?? 0} · exited ${d?.exited.length ?? 0} · ` +
       `cost ${p.cost.restCalls} probes, ${p.cost.points} points, ${p.cost.skipped} skipped`,
   )
 }
@@ -134,7 +185,10 @@ signOut.addEventListener('click', () => {
 toggle.addEventListener('click', () => {
   view = view === 'map' ? 'board' : 'map'
   toggle.textContent = view === 'map' ? 'Star map ⇄ Board' : 'Board ⇄ Star map'
-  draw(current)
+  // The flip is not a special case: it is the same graph laid out twice, so it
+  // is the same diff-and-replay path a poll takes (decision 5). Story 8 comes
+  // out of the machinery already built rather than out of code of its own.
+  glideTo(current)
 })
 
 svg.addEventListener('pointerover', (e: PointerEvent) => {
