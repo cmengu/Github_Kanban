@@ -106,6 +106,17 @@ const R_MAX = 30
 const PULL_STRIP_H = 34
 const PULL_GAP = 56
 const R_PULL = 7
+/**
+ * The Done pile (step 4, decision 4). Finished work is a white dwarf wearing a
+ * frontier orb's row: 14 of them cost 1036px of a 1132px canvas, so ~87% of the
+ * picture was history. Packed into a grid it costs 128px and says the same
+ * thing. Deliberately *not* a time window — that needs a clock, and a clock in
+ * this file would end "same graph, same pixels", which is what makes every
+ * glide in step 4 attributable to a change rather than to when you looked.
+ */
+const DWARF_COLS = 4
+const DWARF_ROW_H = 32
+const DWARF_GAP = 44
 /** How far along the curve the blocker-end dot sits. */
 const DOT_T = 0.06
 
@@ -134,6 +145,31 @@ const cubicAt = (t: number, p0: Point, p1: Point, p2: Point, p3: Point): Point =
 }
 
 const round = (n: number): number => Math.round(n * 100) / 100
+
+/**
+ * One edge's curve, from two points — exported in step 4 because motion needs
+ * it too. Mid-glide the endpoints are somewhere between two layouts, and an
+ * edge has to be redrawn from wherever its stars currently are; the alternative
+ * was to copy this arithmetic into the motion layer, where it would drift out
+ * of agreement with the real thing and nothing would catch it.
+ *
+ * Still pure, still clockless: same two points, same string.
+ */
+export function edgePath(from: Point, to: Point): { d: string; dot: Point } {
+  // Bend along the direction the edge actually travels. In board view a
+  // blocker often sits to the right of what it blocks, and a fixed
+  // left-to-right bend would sling the curve off the canvas.
+  const dir = to.x === from.x ? 1 : Math.sign(to.x - from.x)
+  const bend = Math.max(30, Math.abs(to.x - from.x) * 0.45) * dir
+  const c1: Point = { x: from.x + bend, y: from.y }
+  const c2: Point = { x: to.x - bend, y: to.y }
+  const dot = cubicAt(DOT_T, from, c1, c2, to)
+
+  return {
+    d: `M ${from.x} ${from.y} C ${round(c1.x)} ${round(c1.y)}, ${round(c2.x)} ${round(c2.y)}, ${to.x} ${to.y}`,
+    dot: { x: round(dot.x), y: round(dot.y) },
+  }
+}
 
 export function layout(g: DomainGraph, view: View): Layout {
   const ix = indexOf(g)
@@ -169,7 +205,7 @@ export function layout(g: DomainGraph, view: View): Layout {
   // ---- stack each lane's columns, sorted by key so stacking is stable ----
   const lanes: Lane[] = []
   const pos: Record<TicketKey, Point> = {}
-  const rowOf = new Map<TicketKey, number>()
+  const isDone = new Set(g.tickets.filter((t) => t.state === 'closed').map((t) => t.key))
 
   // Orphan pulls per lane, key-sorted so their strip order is stable (step 3).
   const pullsByRepo = new Map<string, typeof g.pulls>()
@@ -182,23 +218,44 @@ export function layout(g: DomainGraph, view: View): Layout {
   let cursor = PAD_Y
   for (const repo of repos) {
     const mine = slots.filter((s) => s.repo === repo)
-    let rows = 1
+    // The lane's body height in pixels, not in rows — because since step 4 a
+    // lane can hold two row sizes, and a done column no longer costs what an
+    // open one does. A lane with no finished work computes exactly what
+    // `rows * ROW_H` used to.
+    let bodyH = ROW_H
     for (let band = 0; band <= maxBand; band++) {
       const column = mine
         .filter((s) => s.band === band)
         .map((s) => s.key)
         .sort()
-      rows = Math.max(rows, column.length)
-      column.forEach((key, row) => {
-        rowOf.set(key, row)
+      const open = column.filter((key) => !isDone.has(key))
+      const finished = column.filter((key) => isDone.has(key))
+
+      // Open work keeps its full row: these are the stars you can still act on.
+      open.forEach((key, row) => {
         pos[key] = { x: PAD_X + band * COL_W, y: cursor + row * ROW_H + ROW_H / 2 }
       })
+
+      // Finished work packs into a dwarf grid beneath them, centred on its
+      // column but never past the left edge of the canvas — which is where the
+      // map view's Done column, sitting at PAD_X, would otherwise push it.
+      const gridX = Math.max(PAD_X, PAD_X + band * COL_W - ((DWARF_COLS - 1) * DWARF_GAP) / 2)
+      const gridY = cursor + open.length * ROW_H
+      finished.forEach((key, i) => {
+        pos[key] = {
+          x: gridX + (i % DWARF_COLS) * DWARF_GAP,
+          y: gridY + Math.floor(i / DWARF_COLS) * DWARF_ROW_H + DWARF_ROW_H / 2,
+        }
+      })
+
+      const packedH = Math.ceil(finished.length / DWARF_COLS) * DWARF_ROW_H
+      bodyH = Math.max(bodyH, open.length * ROW_H + packedH)
     }
 
     // The strip: a thin extra row along the bottom of the lane, only when the
     // lane has orphans — a lane without them is exactly as tall as in step 2.
     const orphans = pullsByRepo.get(repo) ?? []
-    const rowsHeight = rows * ROW_H
+    const rowsHeight = bodyH
     const pullStripY = orphans.length > 0 ? cursor + rowsHeight + PULL_STRIP_H / 2 : null
     if (pullStripY != null) {
       orphans.forEach((p, i) => {
@@ -272,20 +329,12 @@ export function layout(g: DomainGraph, view: View): Layout {
       const to = pos[key]
       if (!from || !to) continue
 
-      // Bend along the direction the edge actually travels. In board view a
-      // blocker often sits to the right of what it blocks, and a fixed
-      // left-to-right bend would sling the curve off the canvas.
-      const dir = to.x === from.x ? 1 : Math.sign(to.x - from.x)
-      const bend = Math.max(30, Math.abs(to.x - from.x) * 0.45) * dir
-      const c1: Point = { x: from.x + bend, y: from.y }
-      const c2: Point = { x: to.x - bend, y: to.y }
-      const dot = cubicAt(DOT_T, from, c1, c2, to)
-
+      const curve = edgePath(from, to)
       paths.push({
         blocked: key,
         by,
-        d: `M ${from.x} ${from.y} C ${round(c1.x)} ${round(c1.y)}, ${round(c2.x)} ${round(c2.y)}, ${to.x} ${to.y}`,
-        dot: { x: round(dot.x), y: round(dot.y) },
+        d: curve.d,
+        dot: curve.dot,
         blockerOpen: ix.byKey.get(by)?.state === 'open',
         crossLane: repoOf(key) !== repoOf(by),
       })
@@ -305,13 +354,21 @@ export function layout(g: DomainGraph, view: View): Layout {
   const lastLane = lanes[lanes.length - 1]
   // A long strip may stick out past the last column; the canvas must hold it.
   const widestStrip = Math.max(0, ...[...pullsByRepo.values()].map((list) => list.length))
+  // So may a packed Done grid, which is wider than the column it sits under.
+  // Taking the widest node rather than the widest column also means a graph
+  // with nothing finished computes the same width it always did.
+  const rightmost = Math.max(0, ...Object.values(pos).map((p) => p.x))
   return {
     pos,
     nodes,
     lanes,
     columns,
     paths,
-    width: Math.max(PAD_X * 2 + maxBand * COL_W, widestStrip > 0 ? PAD_X * 2 + (widestStrip - 1) * PULL_GAP : 0),
+    width: Math.max(
+      PAD_X * 2 + maxBand * COL_W,
+      widestStrip > 0 ? PAD_X * 2 + (widestStrip - 1) * PULL_GAP : 0,
+      rightmost + PAD_X,
+    ),
     height: lastLane ? lastLane.y + lastLane.height + PAD_Y : PAD_Y * 2,
   }
 }

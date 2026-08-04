@@ -433,18 +433,49 @@ describe('loop — the heartbeat, on a hand-cranked clock', () => {
 // ----------------------------------------------------- layout: the one change
 
 describe('layout — one declared change, and the proof it was the only one', () => {
-  it('returns exactly what step 2 returned for a graph with no orphan pulls', () => {
+  /**
+   * Step 3 asserted this recording byte for byte. Step 4 packs the Done pile
+   * (decision 4), so the finished stars deliberately sit somewhere else now —
+   * and the recording is kept rather than re-taken, because the interesting
+   * claim is no longer "nothing changed" but "only the declared thing did".
+   * Open work still lands on the same pixel of its own lane, the lane order and
+   * the column headings are untouched, and the canvas is the one number that
+   * moved.
+   */
+  it('leaves every unfinished ticket exactly where step 2 put it', () => {
     const g = { ...demo, pulls: [] }
+    const finished = new Set(demo.tickets.filter((t) => t.state === 'closed').map((t) => t.key))
+    expect(finished.size).toBeGreaterThan(0)
+
     for (const view of ['map', 'board'] as const) {
       const now = layout(g, view)
-      // The two fields step 3 added are stripped; everything else must be
-      // byte-identical to the recorded step-2 output.
-      const stripped = {
-        ...now,
-        nodes: now.nodes.map(({ kind, ...rest }) => rest),
-        lanes: now.lanes.map(({ pullStripY, ...rest }) => rest),
+      const then = step2[view] as {
+        pos: Record<string, { x: number; y: number }>
+        lanes: { repo: string; y: number; weight: number }[]
+        columns: unknown[]
+        height: number
       }
-      expect(JSON.parse(JSON.stringify(stripped))).toEqual(step2[view])
+      const laneYThen = new Map(then.lanes.map((l) => [l.repo, l.y]))
+      const laneYNow = new Map(now.lanes.map((l) => [l.repo, l.y]))
+
+      for (const n of now.nodes) {
+        if (finished.has(n.key)) continue
+        const was = then.pos[n.key]!
+        // Lanes above may have shrunk, so the comparison is inside the lane:
+        // same column, same row, same offset from the lane's own top edge.
+        expect(n.x).toBe(was.x)
+        expect(n.y - laneYNow.get(n.lane)!).toBe(was.y - laneYThen.get(n.lane)!)
+      }
+
+      expect(now.lanes.map((l) => l.repo)).toEqual(then.lanes.map((l) => l.repo))
+      expect(now.lanes.map((l) => l.weight)).toEqual(then.lanes.map((l) => l.weight))
+      expect(JSON.parse(JSON.stringify(now.columns))).toEqual(then.columns)
+      // A packed grid is wider than the single column it replaces, so in board
+      // view — where Done is the last column — the canvas gains a little on the
+      // right. It may never lose any: that would put a star off the canvas.
+      expect(now.width).toBeGreaterThanOrEqual((step2[view] as { width: number }).width)
+      expect(now.height).toBeLessThan(then.height)
+
       expect(now.nodes.every((n) => n.kind === 'ticket')).toBe(true)
       expect(now.lanes.every((l) => l.pullStripY === null)).toBe(true)
     }
