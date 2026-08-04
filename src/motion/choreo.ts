@@ -48,15 +48,21 @@ const SPREAD_MS = 420
 export interface PlanOpts {
   /** `prefers-reduced-motion`. Everything still happens, all of it at once. */
   reduced?: boolean
+  /**
+   * Which side of the canvas finished work sits on: `'left'` on the star map,
+   * `'right'` on the board. It is the only view-dependent thing in this file,
+   * and it is here because the cascade has to start at the cause. When a
+   * blocker closes it drops into the Done pile and its dependents shuffle in
+   * behind it, so the movement propagates *outward from Done* — which is a
+   * different direction on each of the two projections.
+   */
+  doneSide?: 'left' | 'right'
 }
 
 /**
  * Turns a difference into a schedule: what leaves, goes; what moves, moves;
- * what arrives, arrives last, so a star never lands on a spot another star has
- * not vacated yet.
- *
- * Movers set off in reading order from the Done end of the canvas outward,
- * which is the direction the work actually travels when a blocker closes.
+ * what arrives, arrives once the moving has stopped, so a star never lands on
+ * a spot another star has not vacated yet.
  */
 export function plan(d: LayoutDelta, opts: PlanOpts = {}): MotionPlan {
   const exitMs = opts.reduced ? 0 : EXIT_MS
@@ -66,7 +72,10 @@ export function plan(d: LayoutDelta, opts: PlanOpts = {}): MotionPlan {
   const cues: Cue[] = []
   for (const n of d.exited) cues.push({ key: n.key, act: 'exit', at: 0, dur: exitMs })
 
-  const movers = [...d.moved].sort((a, b) => a.to.x - b.to.x || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+  const near = opts.doneSide === 'right' ? -1 : 1
+  const movers = [...d.moved].sort(
+    (a, b) => near * (a.to.x - b.to.x) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
+  )
   const step = opts.reduced
     ? 0
     : Math.min(STAGGER_MS, movers.length > 1 ? SPREAD_MS / (movers.length - 1) : STAGGER_MS)
@@ -77,9 +86,10 @@ export function plan(d: LayoutDelta, opts: PlanOpts = {}): MotionPlan {
   const movesEnd = cues
     .filter((c) => c.act === 'move')
     .reduce((end, c) => Math.max(end, c.at + c.dur), exitMs)
-  for (const n of d.entered) {
-    cues.push({ key: n.key, act: 'enter', at: Math.max(0, movesEnd - enterMs / 2), dur: enterMs })
-  }
+  // Arrivals wait for the shuffling to finish. A star fading in on top of one
+  // still sliding out of that spot reads as two things in one place, which is
+  // the one thing a picture of a graph must never say.
+  for (const n of d.entered) cues.push({ key: n.key, act: 'enter', at: movesEnd, dur: enterMs })
 
   return { cues, total: cues.reduce((end, c) => Math.max(end, c.at + c.dur), 0) }
 }
@@ -133,6 +143,9 @@ export function snapshotExits(svg: SVGSVGElement, d: LayoutDelta): SVGGElement[]
     ghost.setAttribute('data-ghost-key', n.key)
     ghost.setAttribute('aria-hidden', 'true')
     ghost.style.pointerEvents = 'none'
+    // scene.css fades .node opacity for the hover highlight. A ghost's opacity
+    // is written every frame instead, and the two clocks would fight.
+    ghost.style.transition = 'none'
     out.push(ghost)
   }
   return out
@@ -168,9 +181,17 @@ export function play(
   const nextR = new Map(next.nodes.map((n) => [n.key, n.r]))
   const moves = p.cues.filter((c) => c.act === 'move')
   const enters = p.cues.filter((c) => c.act === 'enter')
-  const exits = p.cues.filter((c) => c.act === 'exit')
+  const exits = new Map(p.cues.filter((c) => c.act === 'exit').map((c) => [c.key, c]))
+  // Looked up by key rather than searched for: `pointAt` is called once per
+  // star and twice per edge, sixty times a second. The renderer's own header
+  // records what happens when per-frame work is done the lazy way.
+  const moveByKey = new Map(moves.map((c) => [c.key, c]))
 
-  const ghostLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  // Entering stars are driven frame by frame; scene.css's opacity transition
+  // must not also have an opinion about them.
+  for (const cue of enters) nodes.get(cue.key)?.style.setProperty('transition', 'none')
+
+  const ghostLayer = document.createElementNS(svg.namespaceURI, 'g')
   ghostLayer.setAttribute('class', 'ghosts')
   if (ghosts.length > 0) {
     ghostLayer.append(...ghosts)
@@ -179,7 +200,7 @@ export function play(
 
   /** Where a star is at time `t` — the single source both stars and edges read. */
   const pointAt = (key: TicketKey, t: number): Point => {
-    const cue = moves.find((c) => c.key === key)
+    const cue = moveByKey.get(key)
     const to = next.pos[key]
     const from = prev.pos[key]
     if (!cue || !to || !from) return to ?? from ?? { x: 0, y: 0 }
@@ -215,7 +236,7 @@ export function play(
     }
 
     for (const ghost of ghosts) {
-      const cue = exits.find((c) => c.key === ghost.getAttribute('data-ghost-key'))
+      const cue = exits.get(ghost.getAttribute('data-ghost-key') ?? '')
       const e = ease(clamp01(!cue || cue.dur === 0 ? 1 : (t - cue.at) / cue.dur))
       ghost.style.opacity = String(1 - e)
     }
@@ -241,7 +262,11 @@ export function play(
       el.style.removeProperty('transform')
       for (const c of el.querySelectorAll<SVGElement>('.orb, .glow')) c.style.removeProperty('transform')
     }
-    for (const cue of enters) nodes.get(cue.key)?.style.removeProperty('opacity')
+    for (const cue of enters) {
+      const el = nodes.get(cue.key)
+      el?.style.removeProperty('opacity')
+      el?.style.removeProperty('transition')
+    }
     ghostLayer.remove()
 
     for (const path of next.paths) {

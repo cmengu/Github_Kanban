@@ -16,7 +16,7 @@ import { layout, type Layout, type View } from './layout/layout'
 import { clearConfig, loadConfig, parseRepo, saveConfig, type Config, type RepoRef } from './live/config'
 import { startLoop } from './live/loop'
 import type { Poll } from './live/client'
-import { diffLayouts } from './motion/delta'
+import { diffLayouts, type LayoutDelta } from './motion/delta'
 import { plan, play, snapshotExits } from './motion/choreo'
 import { mount, setFocus } from './render/scene'
 import type { DomainGraph } from './domain/types'
@@ -65,9 +65,12 @@ const draw = (g: DomainGraph): Layout => {
  * already running is cancelled first — it snaps to what is mounted, so the new
  * one always measures from a real picture and never from a half-finished one.
  */
-const glideTo = (g: DomainGraph): Layout => {
+const glideTo = (g: DomainGraph): LayoutDelta | null => {
   const from = shown
-  if (!from) return draw(g)
+  if (!from) {
+    draw(g)
+    return null
+  }
 
   cancelGlide?.()
   const next = layout(g, view)
@@ -77,8 +80,11 @@ const glideTo = (g: DomainGraph): Layout => {
   current = g
   mount(svg, g, next)
   shown = next
-  cancelGlide = play(svg, from, next, plan(d, { reduced: reduced() }), ghosts)
-  return next
+  // Done sits at the left of the star map and at the right of the board, and
+  // the cascade starts there either way.
+  const p = plan(d, { reduced: reduced(), doneSide: view === 'map' ? 'left' : 'right' })
+  cancelGlide = play(svg, from, next, p, ghosts)
+  return d
 }
 
 const showProblems = (problems: string[]): void => {
@@ -101,10 +107,15 @@ function onPoll(p: Poll): void {
   if (p.snapshot == null) return
   const g = toDomainGraph(p.snapshot)
   showProblems([...ingestProblems(p.snapshot), ...p.problems])
-  const l = glideTo(g)
+  const d = glideTo(g)
+  const l = shown!
   const done = g.tickets.filter((t) => t.state === 'closed').length
+  // The instrument now reports the change as well as the picture: a poll that
+  // costs points but moves nothing is a different problem from one that moves
+  // half the canvas, and the line has to be able to tell them apart.
   console.log(
     `overviewer: ${g.tickets.length} tickets · ${done} done · canvas ${l.height}px · ` +
+      `moved ${d?.moved.length ?? 0} · entered ${d?.entered.length ?? 0} · exited ${d?.exited.length ?? 0} · ` +
       `cost ${p.cost.restCalls} probes, ${p.cost.points} points, ${p.cost.skipped} skipped`,
   )
 }

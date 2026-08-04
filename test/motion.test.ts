@@ -68,6 +68,9 @@ describe('diffLayouts — the change, as a value', () => {
     expect(d.exited).toEqual([])
     expect(d.moved).toEqual([])
     expect(d.still).toHaveLength(l.nodes.length)
+
+    // And nothing to replay: a poll that changed nothing must not cost a frame.
+    expect(plan(d)).toEqual({ cues: [], total: 0 })
   })
 
   it('accounts for every node of both layouts exactly once', () => {
@@ -153,7 +156,24 @@ describe('plan — the schedule, before anything is drawn', () => {
 
     const at = (act: string): number[] => p.cues.filter((c) => c.act === act).map((c) => c.at)
     expect(Math.min(...at('exit'))).toBe(0)
-    expect(Math.min(...at('enter'))).toBeGreaterThan(Math.max(...at('exit')))
+    // Arrivals start only once every mover has finished — nothing fades in on
+    // top of a star still sliding out of that spot.
+    const movesEnd = Math.max(...p.cues.filter((c) => c.act === 'move').map((c) => c.at + c.dur))
+    expect(Math.min(...at('enter'))).toBeGreaterThanOrEqual(movesEnd)
+  })
+
+  it('starts the cascade at Done, whichever side of the canvas Done is on', () => {
+    const d = deltaOf()
+    const first = (side: 'left' | 'right'): string =>
+      plan(d, { doneSide: side })
+        .cues.filter((c) => c.act === 'move')
+        .sort((a, b) => a.at - b.at)[0]!.key
+
+    // #1 is the ticket that closed and drops into the pile; on the star map the
+    // pile is on the left, on the board it is the last column, and the ripple
+    // sets off from it either way.
+    expect(first('left')).toBe('o/r#1')
+    expect(first('right')).toBe('o/r#3')
   })
 
   it('keeps the whole glide short however many stars move', () => {
@@ -292,14 +312,21 @@ describe('the Done pile packs (decision 4)', () => {
     const l = layout(g, 'board')
     const lane = l.lanes[0]!
 
-    // Every node still sits on a 74px row, centred in it, and the lane is
-    // exactly as many of those rows tall as its fullest column — packing is
-    // inert until there is something finished to pack, so nothing step 3 drew
-    // has moved by a pixel.
+    // Step 3's arithmetic, restated: rows of 74 starting 48 from the top,
+    // columns of 190 starting 60 from the left, a lane exactly as tall as its
+    // fullest column, a canvas one pad wider than the last column. Packing is
+    // inert until there is something finished to pack, so with nothing closed
+    // every one of these still holds to the pixel.
     expect(l.nodes).toHaveLength(3)
-    for (const n of l.nodes) expect((n.y - lane.y - 37) % 74).toBe(0)
-    expect(lane.height).toBe(3 * 74)
-    expect(l.width).toBe(690)
+    expect(lane.y).toBe(48)
+    for (const n of l.nodes) {
+      expect((n.y - lane.y - 37) % 74).toBe(0)
+      expect((n.x - 60) % 190).toBe(0)
+    }
+    const tallest = Math.max(...l.columns.map((c) => l.nodes.filter((n) => n.band === c.band).length))
+    expect(lane.height).toBe(tallest * 74)
+    expect(l.height).toBe(lane.y + lane.height + 48)
+    expect(l.width).toBe(60 * 2 + 3 * 190)
   })
 
   it('compresses the fixture from a scroll of history into a corner of it', () => {
