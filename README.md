@@ -6,7 +6,7 @@
   <img src="docs/star-map-demo.png" alt="Overviewer star map on its demo data: Done and Ready now columns, with this repo's own tickets as orbs and blocked-by edges linking tickets #10 to #4 in the Done column" width="480">
 </p>
 
-<p align="center">Star map view on the demo data, a recorded snapshot of this repo's own issues (cropped to the dependency graph; the app labels this data "demo data"). The Board view groups the same tickets into Tickets, In progress, In review and Done columns.</p>
+<p align="center">Star map view on the demo data, a recorded snapshot of this repo's own issues (cropped to the top of the graph; the app labels this data "demo data"). The Board view groups the same tickets into Tickets, In progress, In review and Done columns.</p>
 
 ## Why
 
