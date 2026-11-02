@@ -3,10 +3,10 @@
 <p align="center">A web app that draws GitHub issues and pull requests from many repos as one dependency graph, grouped by workflow bucket.</p>
 
 <p align="center">
-  <img src="docs/board-demo.png" alt="Overviewer board view on its demo data: columns Tickets, In progress, In review and Done, with this repo's own issues as orbs and blocked-by edges between the done tickets" width="800">
+  <img src="docs/star-map-demo.png" alt="Overviewer star map on its demo data: Done and Ready now columns, with this repo's own tickets as orbs and blocked-by edges linking tickets #10 to #4 in the Done column" width="480">
 </p>
 
-<p align="center">Board view on the demo data, a recorded snapshot of this repo's own issues (cropped). The app labels it "demo data".</p>
+<p align="center">Star map view on the demo data, a recorded snapshot of this repo's own issues (cropped to the dependency graph; the app labels this data "demo data"). The Board view groups the same tickets into Tickets, In progress, In review and Done columns.</p>
 
 ## Why
 
